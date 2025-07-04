@@ -1,7 +1,6 @@
 #include <string.h>
 #include "ast.h"
 #include "stdlib.h"
-#include "variavel.h"
 
 mapa_t *adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos) {
 	while (variaveis != NULL) {

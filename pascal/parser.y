@@ -6,7 +6,6 @@
  #include "../lista.h"
  #include "../mapa.h"
  #include "../ast.h"
- #include "../variavel.h"
  void yyerror(const char *msg);
 
 mapa_t *tabela_simbolos;
