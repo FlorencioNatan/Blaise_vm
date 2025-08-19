@@ -40,7 +40,7 @@ HEX_DIGIT    [0-9a-fA-F]
 
 [ \t\n]+         {/* ignore spaces */}
 
-(\.{DIGIT}+)|({DIGIT}+\.{DIGIT}+)       {yylval.dval = atof(yytext); return REAL;}
+(\.{DIGIT}+)|({DIGIT}+\.{DIGIT}+)       {yylval.rval = atof(yytext); return REAL;}
 ({DIGIT}+)                              {yylval.ival = atoi(yytext); return INTEGER;}
 ({LETTER}+({DIGIT}|{LETTER})*)          {yylval.identVal = copiarString(yytext); return IDENTIFIER;}
 
