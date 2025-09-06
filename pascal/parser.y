@@ -28,11 +28,11 @@ mapa_t *tabela_simbolos;
 %locations
 
 %start init
-%token MULT DIV PLUS MINUS EQUAL L_PAREN R_PAREN SEMICOLON PERIOD COLON COMMA               DIFF GREATER_THAN GREATER_EQUAL LESSER_THAN LESSER_EQUAL
+%token MULTIPLICACAO DIVISAO MAIS MENOS IGUAL L_PAREN R_PAREN PONTO_E_VIRGULA PONTO DOIS_PONTOS VIRGULA               DIFERENCA MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL
 %token KW_PROGRAM KW_BEGIN KW_END KW_VAR KW_CHAR KW_BOOLEAN KW_INTEGER KW_REAL KW_STRING    KW_AND KW_OR KW_NOT
 %token <rval> REAL
 %token <ival> INTEGER
-%token <identVal> IDENTIFIER
+%token <identVal> IDENTIFICADOR
 %type <node> exp
 %type <node> logic_exp
 %type <lista> statement
@@ -40,9 +40,9 @@ mapa_t *tabela_simbolos;
 %type <lista> var_lista
 %type <mapa> var_declaracao
 %left KW_AND KW_OR KW_NOT
-%left EQUAL DIFF GREATER_THAN GREATER_EQUAL LESSER_THAN LESSER_EQUAL
-%left PLUS MINUS
-%left MULT DIV
+%left IGUAL DIFERENTE MARIOR MAIOR_IGUAL MENOR MENOR_IGUAL
+%left MAIS MENOS
+%left MULTIPLICACAO DIVISAO
 %nonassoc UMINUS
 
 
@@ -50,18 +50,18 @@ mapa_t *tabela_simbolos;
 
 
 %% 
-init:	KW_PROGRAM IDENTIFIER SEMICOLON var_declaracao KW_BEGIN statement KW_END PERIOD { programa_t* programa = criarNoPrograma($2, $4, $6); printAST(programa); /*printf("%s", $2);*/ }
+init:	KW_PROGRAM IDENTIFICADOR PONTO_E_VIRGULA var_declaracao KW_BEGIN statement KW_END PONTO { programa_t* programa = criarNoPrograma($2, $4, $6); printAST(programa); /*printf("%s", $2);*/ }
 
 var_declaracao:	{/* */}
 					| KW_VAR var_linhas_declaracao { $$ = tabela_simbolos; /* printMapa(tabela_simbolos); */ }
 
-var_linhas_declaracao:	var_linha_declaracao SEMICOLON              {  }
-						| var_linhas_declaracao var_linha_declaracao SEMICOLON {  }
+var_linhas_declaracao:	var_linha_declaracao PONTO_E_VIRGULA              {  }
+						| var_linhas_declaracao var_linha_declaracao PONTO_E_VIRGULA {  }
 
-var_linha_declaracao:	var_lista COLON var_tipos { /* $$ = $1; */ tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos($1, $3, tabela_simbolos); }
+var_linha_declaracao:	var_lista DOIS_PONTOS var_tipos { /* $$ = $1; */ tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos($1, $3, tabela_simbolos); }
 
-var_lista:	IDENTIFIER { $$ = addStringNaLista($1, NULL); }
-		| IDENTIFIER COMMA var_lista { $$ = addStringNaLista($1, $3); }
+var_lista:	IDENTIFICADOR { $$ = addStringNaLista($1, NULL); }
+		| IDENTIFICADOR VIRGULA var_lista { $$ = addStringNaLista($1, $3); }
 
 var_tipos:	KW_CHAR               { $$ = TIPO_PRIMITIVO_CHAR; }
 			| KW_BOOLEAN          { $$ = TIPO_PRIMITIVO_BOOLEAN; }
@@ -70,25 +70,25 @@ var_tipos:	KW_CHAR               { $$ = TIPO_PRIMITIVO_CHAR; }
 			| KW_STRING           { $$ = TIPO_PRIMITIVO_STRING; }
 
 statement: {  }
-            | exp SEMICOLON { $$ = addNoASTNaLista($1, NULL); };
+            | exp PONTO_E_VIRGULA { $$ = addNoASTNaLista($1, NULL); };
 
 exp:		REAL                  { $$ = criarNoReal($1); }
 			| INTEGER             { $$ = criarNoInteger($1); }
-			| exp PLUS exp        { $$ = criarNoBinario($1, $3, TAN_SOMA); }
-			| exp MINUS exp       { $$ = criarNoBinario($1, $3, TAN_SUBTRACAO); }
-			| exp MULT exp        { $$ = criarNoBinario($1, $3, TAN_MULTIPLICACAO); }
-			| exp DIV exp         { if ($3==0) yyerror("divide by zero"); else $$ = criarNoBinario($1, $3, TAN_DIVISAO); }
-			| MINUS exp %prec UMINUS { $$ = criarNoUnario($2, TAN_NEGATIVACAO); }
+			| exp MAIS exp        { $$ = criarNoBinario($1, $3, TAN_SOMA); }
+			| exp MENOS exp       { $$ = criarNoBinario($1, $3, TAN_SUBTRACAO); }
+			| exp MULTIPLICACAO exp        { $$ = criarNoBinario($1, $3, TAN_MULTIPLICACAO); }
+			| exp DIVISAO exp         { if ($3==0) yyerror("divide by zero"); else $$ = criarNoBinario($1, $3, TAN_DIVISAO); }
+			| MENOS exp %prec UMINUS { $$ = criarNoUnario($2, TAN_NEGATIVACAO); }
 			| logic_exp
 			| L_PAREN exp R_PAREN { $$ = $2; }
 			;
 
-logic_exp: 	exp EQUAL exp       { $$ = criarNoBinario($1, $3, TAN_IGUAL); }
-			| exp DIFF exp       { $$ = criarNoBinario($1, $3, TAN_DIFERENTE); }
-			| exp GREATER_THAN exp       { $$ = criarNoBinario($1, $3, TAN_MAIOR); }
-			| exp GREATER_EQUAL exp       { $$ = criarNoBinario($1, $3, TAN_MAIOR_IGUAL); }
-			| exp LESSER_THAN exp       { $$ = criarNoBinario($1, $3, TAN_MENOR); }
-			| exp LESSER_EQUAL exp       { $$ = criarNoBinario($1, $3, TAN_MENOR_IGUAL); }
+logic_exp: 	exp IGUAL exp       { $$ = criarNoBinario($1, $3, TAN_IGUAL); }
+			| exp DIFERENTE exp       { $$ = criarNoBinario($1, $3, TAN_DIFERENTE); }
+			| exp MAIOR exp       { $$ = criarNoBinario($1, $3, TAN_MAIOR); }
+			| exp MAIOR_IGUAL exp       { $$ = criarNoBinario($1, $3, TAN_MAIOR_IGUAL); }
+			| exp MENOR exp       { $$ = criarNoBinario($1, $3, TAN_MENOR); }
+			| exp MENOR_IGUAL exp       { $$ = criarNoBinario($1, $3, TAN_MENOR_IGUAL); }
 
 			| exp KW_AND exp       { $$ = criarNoBinario($1, $3, TAN_AND); }
 			| exp KW_OR exp       { $$ = criarNoBinario($1, $3, TAN_OR); }

@@ -30,31 +30,31 @@ HEX_DIGIT    [0-9a-fA-F]
 (?i:or)                 {return KW_OR;}
 (?i:not)                {return KW_NOT;}
 
-"-"                     {return MINUS;}
-"+"                     {return PLUS;}
-"*"                     {return MULT;}
-"/"                     {return DIV;}
-"="                     {return EQUAL;}
+"-"                     {return MENOS;}
+"+"                     {return MAIS;}
+"*"                     {return MULTIPLICACAO;}
+"/"                     {return DIVISAO;}
+"="                     {return IGUAL;}
 
-"<>"                    {return DIFF;}
-">"                     {return GREATER_THAN;}
-">="                    {return GREATER_EQUAL;}
-"<"                     {return LESSER_THAN;}
-"<="                    {return LESSER_EQUAL;}
+"<>"                    {return DIFERENTE;}
+">"                     {return MAIOR;}
+">="                    {return MAIOR_IGUAL;}
+"<"                     {return MENOR;}
+"<="                    {return MENOR_IGUAL;}
 
 "("                     {return L_PAREN;}
 ")"                     {return R_PAREN;}
-";"                     {return SEMICOLON;}
-":"                     {return COLON;}
-"."                     {return PERIOD;}
-","                     {return COMMA;}
+";"                     {return PONTO_E_VIRGULA;}
+":"                     {return DOIS_PONTOS;}
+"."                     {return PONTO;}
+","                     {return VIRGULA;}
 
 
 [ \t\n]+         {/* ignore spaces */}
 
 (\.{DIGIT}+)|({DIGIT}+\.{DIGIT}+)       {yylval.rval = atof(yytext); return REAL;}
 ({DIGIT}+)                              {yylval.ival = atoi(yytext); return INTEGER;}
-({LETTER}+({DIGIT}|{LETTER})*)          {yylval.identVal = copiarString(yytext); return IDENTIFIER;}
+({LETTER}+({DIGIT}|{LETTER})*)          {yylval.identVal = copiarString(yytext); return IDENTIFICADOR;}
 
 
 .              {printf("Error at line %d: unrecognized symbol \"%s\"\n", yylloc.first_line, yytext); exit(0);}
