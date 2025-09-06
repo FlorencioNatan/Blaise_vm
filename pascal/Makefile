@@ -14,7 +14,8 @@ $(PARSER): parser.y
 	bison -d -v -o src/flex_bison/parser.c parser.y
 
 $(LEXER): lexer.l
-	flex --header-file=src/flex_bison/lexer.h -o src/flex_bison/lexer.c lexer.l 
+	flex --header-file=src/flex_bison/lexer.h -o src/flex_bison/lexer.c lexer.l
+	sed -i '24i int fileno(FILE *stream);' src/flex_bison/lexer.c 
 
 run:
 	./build/pascal teste.pas
@@ -22,7 +23,7 @@ run:
 clean:
 	rm $(LEXER) src/flex_bison/lexer.h
 	rm $(PARSER) src/flex_bison/parser.h
-	rm build/$(PROGRAM)
 	rm $(OBJS)
+	rm build/$(PROGRAM)
 
 
