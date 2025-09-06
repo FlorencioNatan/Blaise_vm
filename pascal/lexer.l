@@ -25,11 +25,23 @@ HEX_DIGIT    [0-9a-fA-F]
 (?i:integer)            {return KW_INTEGER;}
 (?i:real)               {return KW_REAL;}
 (?i:string)             {return KW_STRING;}
+
+(?i:and)                {return KW_AND;}
+(?i:or)                 {return KW_OR;}
+(?i:not)                {return KW_NOT;}
+
 "-"                     {return MINUS;}
 "+"                     {return PLUS;}
 "*"                     {return MULT;}
 "/"                     {return DIV;}
 "="                     {return EQUAL;}
+
+"<>"                    {return DIFF;}
+">"                     {return GREATER_THAN;}
+">="                    {return GREATER_EQUAL;}
+"<"                     {return LESSER_THAN;}
+"<="                    {return LESSER_EQUAL;}
+
 "("                     {return L_PAREN;}
 ")"                     {return R_PAREN;}
 ";"                     {return SEMICOLON;}
@@ -48,6 +60,7 @@ HEX_DIGIT    [0-9a-fA-F]
 .              {printf("Error at line %d: unrecognized symbol \"%s\"\n", yylloc.first_line, yytext); exit(0);}
 
 %%
+
 
 char* copiarString(char* fonte) {
 	char* novaString = malloc((strlen(fonte)+1) * sizeof(char));

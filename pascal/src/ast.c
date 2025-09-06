@@ -103,6 +103,21 @@ ast_node_t* criarNoNegativar(ast_node_t* op) {
 	return no;
 }
 
+ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = tipo;
+	no->filhos = addNoASTNaLista(rhs, NULL);
+	no->filhos = addNoASTNaLista(lhs, no->filhos);
+	return no;
+}
+
+ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = tipo;
+	no->filhos = addNoASTNaLista(op, NULL);
+	return no;
+}
+
 void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 	if (noAST == NULL) {
 		return;
@@ -132,6 +147,33 @@ void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 		break;
 	case TAN_NEGATIVACAO:
 		strcpy(descricaoNoAST, "NEGATIVO");
+		break;
+	case TAN_IGUAL:
+		strcpy(descricaoNoAST, "IGUAL");
+		break;
+	case TAN_DIFERENTE:
+		strcpy(descricaoNoAST, "DIFERENTE");
+		break;
+	case TAN_MAIOR:
+		strcpy(descricaoNoAST, "MAIOR");
+		break;
+	case TAN_MAIOR_IGUAL:
+		strcpy(descricaoNoAST, "MAIOR OU IGUAL");
+		break;
+	case TAN_MENOR:
+		strcpy(descricaoNoAST, "MENOR");
+		break;
+	case TAN_MENOR_IGUAL:
+		strcpy(descricaoNoAST, "MENOR OU IGUAL");
+		break;
+	case TAN_AND:
+		strcpy(descricaoNoAST, "AND");
+		break;
+	case TAN_OR:
+		strcpy(descricaoNoAST, "OR");
+		break;
+	case TAN_NOT:
+		strcpy(descricaoNoAST, "NOT");
 		break;
 	}
 	Agnode_t *f = agnode(g, descricaoNoAST, 1);

@@ -28,19 +28,25 @@ mapa_t *tabela_simbolos;
 %locations
 
 %start init
-%token MULT DIV PLUS MINUS EQUAL L_PAREN R_PAREN SEMICOLON PERIOD COLON COMMA
-%token KW_PROGRAM KW_BEGIN KW_END KW_VAR KW_CHAR KW_BOOLEAN KW_INTEGER KW_REAL KW_STRING
+%token MULT DIV PLUS MINUS EQUAL L_PAREN R_PAREN SEMICOLON PERIOD COLON COMMA               DIFF GREATER_THAN GREATER_EQUAL LESSER_THAN LESSER_EQUAL
+%token KW_PROGRAM KW_BEGIN KW_END KW_VAR KW_CHAR KW_BOOLEAN KW_INTEGER KW_REAL KW_STRING    KW_AND KW_OR KW_NOT
 %token <rval> REAL
 %token <ival> INTEGER
 %token <identVal> IDENTIFIER
 %type <node> exp
+%type <node> logic_exp
 %type <lista> statement
 %type <tipo> var_tipos
 %type <lista> var_lista
 %type <mapa> var_declaracao
 %left PLUS MINUS
 %left MULT DIV
+%left EQUAL DIFF GREATER_THAN GREATER_EQUAL LESSER_THAN LESSER_EQUAL
+%left KW_AND KW_OR KW_NOT
 %nonassoc UMINUS
+
+
+
 
 
 %% 
@@ -73,8 +79,22 @@ exp:		REAL                  { $$ = criarNoReal($1); }
 			| exp MULT exp        { $$ = criarNoMultiplicacao($1, $3); }
 			| exp DIV exp         { if ($3==0) yyerror("divide by zero"); else $$ = criarNoDivisao($1, $3); }
 			| MINUS exp %prec UMINUS { $$ = criarNoNegativar($2); }
+			| logic_exp
 			| L_PAREN exp R_PAREN { $$ = $2; }
 			;
+
+logic_exp: 	exp EQUAL exp       { $$ = criarNoBinario($1, $3, TAN_IGUAL); }
+			| exp DIFF exp       { $$ = criarNoBinario($1, $3, TAN_DIFERENTE); }
+			| exp GREATER_THAN exp       { $$ = criarNoBinario($1, $3, TAN_MAIOR); }
+			| exp GREATER_EQUAL exp       { $$ = criarNoBinario($1, $3, TAN_MAIOR_IGUAL); }
+			| exp LESSER_THAN exp       { $$ = criarNoBinario($1, $3, TAN_MENOR); }
+			| exp LESSER_EQUAL exp       { $$ = criarNoBinario($1, $3, TAN_MENOR_IGUAL); }
+
+			| exp KW_AND exp       { $$ = criarNoBinario($1, $3, TAN_AND); }
+			| exp KW_OR exp       { $$ = criarNoBinario($1, $3, TAN_OR); }
+			| KW_NOT exp       { $$ = criarNoUnario($2, TAN_NOT); }
+			;
+
 
 %%
 

@@ -27,6 +27,15 @@ typedef enum {
 	TAN_MULTIPLICACAO,
 	TAN_DIVISAO,
 	TAN_NEGATIVACAO,
+	TAN_IGUAL,
+	TAN_DIFERENTE,
+	TAN_MAIOR,
+	TAN_MAIOR_IGUAL,
+	TAN_MENOR,
+	TAN_MENOR_IGUAL,
+	TAN_AND,
+	TAN_OR,
+	TAN_NOT,
 } tipo_ast_node_t;
 
 typedef struct programa {
@@ -64,6 +73,9 @@ ast_node_t* criarNoSubtracao(ast_node_t* lhs, ast_node_t* rhs);
 ast_node_t* criarNoMultiplicacao(ast_node_t* lhs, ast_node_t* rhs);
 ast_node_t* criarNoDivisao(ast_node_t* lhs, ast_node_t* rhs);
 ast_node_t* criarNoNegativar(ast_node_t* op);
+ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo);
+ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo);
+
 void printAST(programa_t* programa);
 
 #endif /* AST_H */
