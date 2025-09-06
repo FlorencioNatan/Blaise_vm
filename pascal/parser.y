@@ -39,10 +39,10 @@ mapa_t *tabela_simbolos;
 %type <tipo> var_tipos
 %type <lista> var_lista
 %type <mapa> var_declaracao
+%left KW_AND KW_OR KW_NOT
+%left EQUAL DIFF GREATER_THAN GREATER_EQUAL LESSER_THAN LESSER_EQUAL
 %left PLUS MINUS
 %left MULT DIV
-%left EQUAL DIFF GREATER_THAN GREATER_EQUAL LESSER_THAN LESSER_EQUAL
-%left KW_AND KW_OR KW_NOT
 %nonassoc UMINUS
 
 
@@ -74,11 +74,11 @@ statement: {  }
 
 exp:		REAL                  { $$ = criarNoReal($1); }
 			| INTEGER             { $$ = criarNoInteger($1); }
-			| exp PLUS exp        { $$ = criarNoSoma($1, $3); }
-			| exp MINUS exp       { $$ = criarNoSubtracao($1, $3); }
-			| exp MULT exp        { $$ = criarNoMultiplicacao($1, $3); }
-			| exp DIV exp         { if ($3==0) yyerror("divide by zero"); else $$ = criarNoDivisao($1, $3); }
-			| MINUS exp %prec UMINUS { $$ = criarNoNegativar($2); }
+			| exp PLUS exp        { $$ = criarNoBinario($1, $3, TAN_SOMA); }
+			| exp MINUS exp       { $$ = criarNoBinario($1, $3, TAN_SUBTRACAO); }
+			| exp MULT exp        { $$ = criarNoBinario($1, $3, TAN_MULTIPLICACAO); }
+			| exp DIV exp         { if ($3==0) yyerror("divide by zero"); else $$ = criarNoBinario($1, $3, TAN_DIVISAO); }
+			| MINUS exp %prec UMINUS { $$ = criarNoUnario($2, TAN_NEGATIVACAO); }
 			| logic_exp
 			| L_PAREN exp R_PAREN { $$ = $2; }
 			;

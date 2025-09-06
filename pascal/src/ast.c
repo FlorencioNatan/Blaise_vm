@@ -64,45 +64,6 @@ ast_node_t* criarNoInteger(int valor) {
 	return no;
 }
 
-ast_node_t* criarNoSoma(ast_node_t* lhs, ast_node_t* rhs) {
-	ast_node_t* no = malloc(sizeof(ast_node_t));
-	no->tipo = TAN_SOMA;
-	no->filhos = addNoASTNaLista(rhs, NULL);
-	no->filhos = addNoASTNaLista(lhs, no->filhos);
-	return no;
-}
-
-ast_node_t* criarNoSubtracao(ast_node_t* lhs, ast_node_t* rhs) {
-	ast_node_t* no = malloc(sizeof(ast_node_t));
-	no->tipo = TAN_SUBTRACAO;
-	no->filhos = addNoASTNaLista(rhs, NULL);
-	no->filhos = addNoASTNaLista(lhs, no->filhos);
-	return no;
-}
-
-ast_node_t* criarNoMultiplicacao(ast_node_t* lhs, ast_node_t* rhs) {
-	ast_node_t* no = malloc(sizeof(ast_node_t));
-	no->tipo = TAN_MULTIPLICACAO;
-	no->filhos = addNoASTNaLista(rhs, NULL);
-	no->filhos = addNoASTNaLista(lhs, no->filhos);
-	return no;
-}
-
-ast_node_t* criarNoDivisao(ast_node_t* lhs, ast_node_t* rhs) {
-	ast_node_t* no = malloc(sizeof(ast_node_t));
-	no->tipo = TAN_DIVISAO;
-	no->filhos = addNoASTNaLista(rhs, NULL);
-	no->filhos = addNoASTNaLista(lhs, no->filhos);
-	return no;
-}
-
-ast_node_t* criarNoNegativar(ast_node_t* op) {
-	ast_node_t* no = malloc(sizeof(ast_node_t));
-	no->tipo = TAN_NEGATIVACAO;
-	no->filhos = addNoASTNaLista(op, NULL);
-	return no;
-}
-
 ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = tipo;

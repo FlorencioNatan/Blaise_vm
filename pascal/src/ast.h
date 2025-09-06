@@ -68,11 +68,6 @@ mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, m
 programa_t* criarNoPrograma(char* nome, mapa_t *tabela_simbolos, lista_t *filhos);
 ast_node_t* criarNoReal(double valor);
 ast_node_t* criarNoInteger(int valor);
-ast_node_t* criarNoSoma(ast_node_t* lhs, ast_node_t* rhs);
-ast_node_t* criarNoSubtracao(ast_node_t* lhs, ast_node_t* rhs);
-ast_node_t* criarNoMultiplicacao(ast_node_t* lhs, ast_node_t* rhs);
-ast_node_t* criarNoDivisao(ast_node_t* lhs, ast_node_t* rhs);
-ast_node_t* criarNoNegativar(ast_node_t* op);
 ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo);
 ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo);
 
