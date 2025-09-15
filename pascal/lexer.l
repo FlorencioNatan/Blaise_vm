@@ -5,11 +5,13 @@
 #include <string.h>
 #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno;
 char* copiarString(char* fonte);
+char buff[1024];
+char *s;
 %}
 
 %option noyywrap
 %option yylineno
-
+%x ASSEMBLY
 
 DIGIT    [0-9]
 LETTER    [a-zA-Z]
@@ -19,7 +21,7 @@ HEX_DIGIT    [0-9a-fA-F]
 
 (?i:program)            {return KW_PROGRAM;}
 (?i:begin)              {return KW_BEGIN;}
-(?i:end)                {return KW_END;}
+<INITIAL>(?i:end)       {return KW_END;}
 (?i:var)                {return KW_VAR;}
 (?i:char)               {return KW_CHAR;}
 (?i:boolean)            {return KW_BOOLEAN;}
@@ -63,6 +65,9 @@ HEX_DIGIT    [0-9a-fA-F]
 
 ":="                    {return WALRUS;}
 
+<INITIAL>(?i:asm)       { BEGIN ASSEMBLY; s = buff; }
+<ASSEMBLY>(?i:end)      { BEGIN INITIAL; *s = '\0'; yylval.asmVal = buff; return ASM; }
+<ASSEMBLY>(.|"\n")             { *s++ = *yytext; }
 
 [ \t\n]+         {/* ignore spaces */}
 

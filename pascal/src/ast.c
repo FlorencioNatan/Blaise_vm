@@ -142,6 +142,14 @@ ast_node_t* criarNoForDownTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t
 	return no;
 }
 
+ast_node_t* criarNoASM(char* asmStr) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_ASM;
+	no->valor.strVal = malloc(sizeof(char) * (strlen(asmStr) + 1));
+	strcpy(no->valor.strVal, asmStr);
+	return no;
+}
+
 void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 	if (noAST == NULL) {
 		return;
@@ -219,6 +227,9 @@ void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 		break;
 	case TAN_FORDOWNTO:
 		strcpy(descricaoNoAST, "FORDOWNTO");
+		break;
+	case TAN_ASM:
+		sprintf(descricaoNoAST, "ASM: %s", noAST->valor.strVal);
 		break;
 	}
 	Agnode_t *f = agnode(g, descricaoNoAST, 1);

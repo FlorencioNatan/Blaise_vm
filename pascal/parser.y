@@ -21,6 +21,7 @@ mapa_t *tabela_simbolos;
   mapa_t* mapa;
   int tipo;
   ast_node_t* node;
+  char* asmVal;
 }
 
 
@@ -33,6 +34,7 @@ mapa_t *tabela_simbolos;
 %token <rval> REAL
 %token <ival> INTEGER
 %token <identVal> IDENTIFICADOR
+%token <asmVal> ASM
 %type <node> exp
 %type <node> statement
 %type <node> atribuicao_statement
@@ -73,6 +75,7 @@ var_tipos:	KW_CHAR               { $$ = TIPO_PRIMITIVO_CHAR; }
 			| KW_INTEGER          { $$ = TIPO_PRIMITIVO_INTEGER; }
 			| KW_REAL             { $$ = TIPO_PRIMITIVO_REAL; }
 			| KW_STRING           { $$ = TIPO_PRIMITIVO_STRING; }
+			;
 
 statement: { $$ = NULL; }
             | atribuicao_statement { $$ = $1; }
@@ -80,6 +83,7 @@ statement: { $$ = NULL; }
             | while_statment { $$ = $1; }
             | repeat_statment { $$ = $1; }
             | for_statment { $$ = $1; }
+            | ASM { $$ = criarNoASM($1); }
             ;
 
 statements: statement { $$ = addNoASTNaLista($1, NULL); }
