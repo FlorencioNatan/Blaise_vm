@@ -71,7 +71,6 @@ var_tipos:	KW_CHAR               { $$ = TIPO_PRIMITIVO_CHAR; }
 			| KW_STRING           { $$ = TIPO_PRIMITIVO_STRING; }
 
 statement: { $$ = NULL; }
-            | exp { $$ = $1; };
             | IDENTIFICADOR WALRUS exp { $$ = criarNoAtribuicao($1, $3); }
             | if_statement { $$ = $1; };
 
