@@ -38,6 +38,9 @@ HEX_DIGIT    [0-9a-fA-F]
 (?i:do)                 {return KW_DO;}
 (?i:REPEAT)             {return KW_REPEAT;}
 (?i:UNTIL)              {return KW_UNTIL;}
+(?i:FOR)                {return KW_FOR;}
+(?i:TO)                 {return KW_TO;}
+(?i:DOWNTO)             {return KW_DOWNTO;}
 
 "-"                     {return MENOS;}
 "+"                     {return MAIS;}
