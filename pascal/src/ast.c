@@ -116,6 +116,14 @@ ast_node_t* criarNoWhile(ast_node_t* condicao, lista_t* codigo) {
 	return no;
 }
 
+ast_node_t* criarNoRepeat(ast_node_t* condicao, lista_t* codigo) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_REPEAT;
+	no->filhos = addListaNaLista(codigo, NULL);
+	no->filhos = addNoASTNaLista(condicao, no->filhos);
+	return no;
+}
+
 void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 	if (noAST == NULL) {
 		return;
@@ -184,6 +192,9 @@ void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 		break;
 	case TAN_WHILE:
 		strcpy(descricaoNoAST, "WHILE");
+		break;
+	case TAN_REPEAT:
+		strcpy(descricaoNoAST, "REPEAT");
 		break;
 	}
 	Agnode_t *f = agnode(g, descricaoNoAST, 1);

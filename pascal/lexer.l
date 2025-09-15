@@ -36,6 +36,8 @@ HEX_DIGIT    [0-9a-fA-F]
 (?i:else)               {return KW_ELSE;}
 (?i:while)              {return KW_WHILE;}
 (?i:do)                 {return KW_DO;}
+(?i:REPEAT)             {return KW_REPEAT;}
+(?i:UNTIL)              {return KW_UNTIL;}
 
 "-"                     {return MENOS;}
 "+"                     {return MAIS;}
