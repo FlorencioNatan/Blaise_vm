@@ -29,7 +29,7 @@ mapa_t *tabela_simbolos;
 
 %start init
 %token MULTIPLICACAO DIVISAO MAIS MENOS IGUAL L_PAREN R_PAREN PONTO_E_VIRGULA PONTO DOIS_PONTOS VIRGULA DIFERENCA MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL WALRUS
-%token KW_PROGRAM KW_BEGIN KW_END KW_VAR KW_CHAR KW_BOOLEAN KW_INTEGER KW_REAL KW_STRING    KW_AND KW_OR KW_NOT KW_IF KW_THEN KW_ELSE
+%token KW_PROGRAM KW_BEGIN KW_END KW_VAR KW_CHAR KW_BOOLEAN KW_INTEGER KW_REAL KW_STRING    KW_AND KW_OR KW_NOT KW_IF KW_THEN KW_ELSE KW_WHILE KW_DO
 %token <rval> REAL
 %token <ival> INTEGER
 %token <identVal> IDENTIFICADOR
@@ -78,7 +78,9 @@ statements: statement { $$ = addNoASTNaLista($1, NULL); }
             | statement PONTO_E_VIRGULA statements { $$ = addNoASTNaLista($1, $3); };
 
 if_statement: KW_IF exp KW_THEN KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, NULL); }
-			  | KW_IF exp KW_THEN KW_BEGIN statements KW_END KW_ELSE KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, $9); };
+			  | KW_IF exp KW_THEN KW_BEGIN statements KW_END KW_ELSE KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, $9); }
+			  | KW_WHILE exp KW_DO KW_BEGIN statements KW_END { $$ = criarNoWhile($2, $5); }
+			  ;
 
 exp:		REAL                  { $$ = criarNoReal($1); }
 			| INTEGER             { $$ = criarNoInteger($1); }

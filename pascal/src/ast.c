@@ -108,6 +108,14 @@ ast_node_t* criarNoIf(ast_node_t* condicao, lista_t* then_stmt, lista_t* else_st
 	return no;
 }
 
+ast_node_t* criarNoWhile(ast_node_t* condicao, lista_t* codigo) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_WHILE;
+	no->filhos = addListaNaLista(codigo, NULL);
+	no->filhos = addNoASTNaLista(condicao, no->filhos);
+	return no;
+}
+
 void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 	if (noAST == NULL) {
 		return;
@@ -174,6 +182,9 @@ void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 	case TAN_IF:
 		strcpy(descricaoNoAST, "IF");
 		break;
+	case TAN_WHILE:
+		strcpy(descricaoNoAST, "WHILE");
+		break;
 	}
 	Agnode_t *f = agnode(g, descricaoNoAST, 1);
 	if (p != NULL) {
@@ -183,9 +194,9 @@ void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 	lista_t* filhos = noAST->filhos;
 	while (filhos != NULL) {
 		if (filhos->tipo == TC_LISTA) {
-			Agnode_t *f = agnode(g, "Código(Statements)", 1);
+			Agnode_t *n = agnode(g, "Código(Statements)", 1);
 			if (p != NULL) {
-				(void)agedge(g, p, f, 0, 1);
+				(void)agedge(g, f, n, 0, 1);
 			}
 			filhos = caudaDaLista(filhos);
 			continue;
@@ -211,18 +222,6 @@ void printAST(programa_t* programa) {
 	Agnode_t *p = agnode(g, programString, 1);
 
 	while (filhos != NULL) {
-		if (filhos->tipo == TC_LISTA) {
-			Agnode_t *f = agnode(g, "Código(Statements)", 1);
-			if (p != NULL) {
-				(void)agedge(g, p, f, 0, 1);
-			}
-			filhos = caudaDaLista(filhos);
-			continue;
-		}
-		if (filhos->tipo != TC_AST_NODE) {
-			filhos = caudaDaLista(filhos);
-			continue;
-		}
 		ast_node_t* valor = filhos->valor.astNode;
 		printNoAST(valor, gvc, g, p);
 		filhos = caudaDaLista(filhos);
