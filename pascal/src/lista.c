@@ -29,6 +29,14 @@ lista_t* addNoASTNaLista(ast_node_t* val, lista_t *lista) {
 	return novoNo;
 }
 
+lista_t* addListaNaLista(lista_t *subLista, lista_t *lista) {
+	lista_t *novoNo = malloc(sizeof(lista_t));
+	novoNo->tipo = TC_LISTA;
+	novoNo->valor.lista = subLista;
+	novoNo->proximo = lista;
+	return novoNo;
+}
+
 void printLista(lista_t *lista) {
 	while (lista != NULL) {
 		if (lista->tipo == TC_STRING) {

@@ -31,6 +31,10 @@ HEX_DIGIT    [0-9a-fA-F]
 (?i:or)                 {return KW_OR;}
 (?i:not)                {return KW_NOT;}
 
+(?i:if)                 {return KW_IF;}
+(?i:then)               {return KW_THEN;}
+(?i:else)               {return KW_ELSE;}
+
 "-"                     {return MENOS;}
 "+"                     {return MAIS;}
 "*"                     {return MULTIPLICACAO;}

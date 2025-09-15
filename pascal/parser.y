@@ -29,12 +29,13 @@ mapa_t *tabela_simbolos;
 
 %start init
 %token MULTIPLICACAO DIVISAO MAIS MENOS IGUAL L_PAREN R_PAREN PONTO_E_VIRGULA PONTO DOIS_PONTOS VIRGULA DIFERENCA MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL WALRUS
-%token KW_PROGRAM KW_BEGIN KW_END KW_VAR KW_CHAR KW_BOOLEAN KW_INTEGER KW_REAL KW_STRING    KW_AND KW_OR KW_NOT
+%token KW_PROGRAM KW_BEGIN KW_END KW_VAR KW_CHAR KW_BOOLEAN KW_INTEGER KW_REAL KW_STRING    KW_AND KW_OR KW_NOT KW_IF KW_THEN KW_ELSE
 %token <rval> REAL
 %token <ival> INTEGER
 %token <identVal> IDENTIFICADOR
 %type <node> exp
 %type <node> statement
+%type <node> if_statement
 %type <lista> statements
 %type <tipo> var_tipos
 %type <lista> var_lista
@@ -69,12 +70,16 @@ var_tipos:	KW_CHAR               { $$ = TIPO_PRIMITIVO_CHAR; }
 			| KW_REAL             { $$ = TIPO_PRIMITIVO_REAL; }
 			| KW_STRING           { $$ = TIPO_PRIMITIVO_STRING; }
 
-statement: {  }
+statement: { $$ = NULL; }
             | exp { $$ = $1; };
-            | IDENTIFICADOR WALRUS exp { $$ = criarNoAtribuicao($1, $3); };
+            | IDENTIFICADOR WALRUS exp { $$ = criarNoAtribuicao($1, $3); }
+            | if_statement { $$ = $1; };
 
 statements: statement { $$ = addNoASTNaLista($1, NULL); }
             | statement PONTO_E_VIRGULA statements { $$ = addNoASTNaLista($1, $3); };
+
+if_statement: KW_IF exp KW_THEN KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, NULL); }
+			  | KW_IF exp KW_THEN KW_BEGIN statements KW_END KW_ELSE KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, $9); };
 
 exp:		REAL                  { $$ = criarNoReal($1); }
 			| INTEGER             { $$ = criarNoInteger($1); }
