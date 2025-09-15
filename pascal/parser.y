@@ -36,6 +36,8 @@ mapa_t *tabela_simbolos;
 %type <node> exp
 %type <node> statement
 %type <node> if_statement
+%type <node> while_statment
+%type <node> repeat_statment
 %type <lista> statements
 %type <tipo> var_tipos
 %type <lista> var_lista
@@ -72,16 +74,22 @@ var_tipos:	KW_CHAR               { $$ = TIPO_PRIMITIVO_CHAR; }
 
 statement: { $$ = NULL; }
             | IDENTIFICADOR WALRUS exp { $$ = criarNoAtribuicao($1, $3); }
-            | if_statement { $$ = $1; };
+            | if_statement { $$ = $1; }
+            | while_statment { $$ = $1; }
+            | repeat_statment { $$ = $1; }
+            ;
 
 statements: statement { $$ = addNoASTNaLista($1, NULL); }
-            | statement PONTO_E_VIRGULA statements { $$ = addNoASTNaLista($1, $3); };
+            | statement PONTO_E_VIRGULA statements { $$ = addNoASTNaLista($1, $3); }
+            ;
 
 if_statement: KW_IF exp KW_THEN KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, NULL); }
 			  | KW_IF exp KW_THEN KW_BEGIN statements KW_END KW_ELSE KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, $9); }
-			  | KW_WHILE exp KW_DO KW_BEGIN statements KW_END { $$ = criarNoWhile($2, $5); }
-			  | KW_REPEAT statements KW_UNTIL exp { $$ = criarNoRepeat($4, $2); }
 			  ;
+
+while_statment: KW_WHILE exp KW_DO KW_BEGIN statements KW_END { $$ = criarNoWhile($2, $5); };
+
+repeat_statment: KW_REPEAT statements KW_UNTIL exp { $$ = criarNoRepeat($4, $2); }
 
 exp:		REAL                  { $$ = criarNoReal($1); }
 			| INTEGER             { $$ = criarNoInteger($1); }
