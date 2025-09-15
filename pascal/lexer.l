@@ -8,6 +8,7 @@ char* copiarString(char* fonte);
 %}
 
 %option noyywrap
+%option yylineno
 
 
 DIGIT    [0-9]
@@ -48,6 +49,8 @@ HEX_DIGIT    [0-9a-fA-F]
 ":"                     {return DOIS_PONTOS;}
 "."                     {return PONTO;}
 ","                     {return VIRGULA;}
+
+":="                    {return WALRUS;}
 
 
 [ \t\n]+         {/* ignore spaces */}

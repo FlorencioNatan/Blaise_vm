@@ -36,6 +36,8 @@ typedef enum {
 	TAN_AND,
 	TAN_OR,
 	TAN_NOT,
+	TAN_VARIAVEL,
+	TAN_ATRIBUICAO,
 } tipo_ast_node_t;
 
 typedef struct programa {
@@ -70,6 +72,8 @@ ast_node_t* criarNoReal(double valor);
 ast_node_t* criarNoInteger(int valor);
 ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo);
 ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo);
+ast_node_t* criarNoVariavel(char* nomeVariavel);
+ast_node_t* criarNoAtribuicao(char* lhs, ast_node_t* rhs);
 
 void printAST(programa_t* programa);
 

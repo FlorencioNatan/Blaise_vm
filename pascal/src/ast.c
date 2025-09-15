@@ -79,6 +79,22 @@ ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo) {
 	return no;
 }
 
+ast_node_t* criarNoVariavel(char* nomeVariavel) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_VARIAVEL;
+	no->valor.strVal = malloc(sizeof(char) * (strlen(nomeVariavel) + 1));
+	strcpy(no->valor.strVal, nomeVariavel);
+	return no;
+}
+
+ast_node_t* criarNoAtribuicao(char* lhs, ast_node_t* rhs) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_ATRIBUICAO;
+	no->filhos = addNoASTNaLista(rhs, NULL);
+	no->filhos = addNoASTNaLista(criarNoVariavel(lhs), no->filhos);
+	return no;
+}
+
 void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 	if (noAST == NULL) {
 		return;
@@ -135,6 +151,12 @@ void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 		break;
 	case TAN_NOT:
 		strcpy(descricaoNoAST, "NOT");
+		break;
+	case TAN_VARIAVEL:
+		sprintf(descricaoNoAST, "VAR: %s", noAST->valor.strVal);
+		break;
+	case TAN_ATRIBUICAO:
+		strcpy(descricaoNoAST, "ATRIBUICAO");
 		break;
 	}
 	Agnode_t *f = agnode(g, descricaoNoAST, 1);
