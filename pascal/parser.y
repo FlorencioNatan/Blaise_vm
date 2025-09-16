@@ -9,6 +9,7 @@
  void yyerror(const char *msg);
 
 mapa_t *tabela_simbolos;
+programa_t* programa;
 
 %}
 
@@ -45,7 +46,9 @@ mapa_t *tabela_simbolos;
 %type <lista> statements
 %type <tipo> var_tipos
 %type <lista> var_lista
-%type <mapa> var_declaracao
+%type <node> var_linha_declaracao
+%type <lista> var_linhas_declaracao
+%type <lista> var_declaracao
 %left KW_AND KW_OR KW_NOT
 %left IGUAL DIFERENTE MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL
 %left MAIS MENOS
@@ -57,15 +60,15 @@ mapa_t *tabela_simbolos;
 
 
 %% 
-init:	KW_PROGRAM IDENTIFICADOR PONTO_E_VIRGULA var_declaracao KW_BEGIN statements KW_END PONTO { programa_t* programa = criarNoPrograma($2, $4, $6); printAST(programa); /*printf("%s", $2);*/ }
+init:	KW_PROGRAM IDENTIFICADOR PONTO_E_VIRGULA var_declaracao KW_BEGIN statements KW_END PONTO { programa = criarNoPrograma($2, $4, $6); /*printAST(programa); printf("%s", $2);*/ }
 
 var_declaracao:	{/* */}
-					| KW_VAR var_linhas_declaracao { $$ = tabela_simbolos; /* printMapa(tabela_simbolos); */ }
+					| KW_VAR var_linhas_declaracao { $$ = $2; /* printMapa(tabela_simbolos); */ }
 
-var_linhas_declaracao:	var_linha_declaracao PONTO_E_VIRGULA              {  }
-						| var_linhas_declaracao var_linha_declaracao PONTO_E_VIRGULA {  }
+var_linhas_declaracao:	var_linha_declaracao PONTO_E_VIRGULA              { $$ = addNoASTNaLista($1, NULL); }
+						| var_linhas_declaracao var_linha_declaracao PONTO_E_VIRGULA { $$ = addNoASTNaLista($2, $1); }
 
-var_linha_declaracao:	var_lista DOIS_PONTOS var_tipos { /* $$ = $1; */ tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos($1, $3, tabela_simbolos); }
+var_linha_declaracao:	var_lista DOIS_PONTOS var_tipos { $$ = criarNoDeclaracaoVar($1, $3);/* $$ = $1; tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos($1, $3, tabela_simbolos);*/ }
 
 var_lista:	IDENTIFICADOR { $$ = addStringNaLista($1, NULL); }
 		| IDENTIFICADOR VIRGULA var_lista { $$ = addStringNaLista($1, $3); }

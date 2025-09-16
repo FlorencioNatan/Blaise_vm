@@ -44,11 +44,13 @@ typedef enum {
 	TAN_FORTO,
 	TAN_FORDOWNTO,
 	TAN_ASM,
+	TAN_DECLARACAO_VAR,
 } tipo_ast_node_t;
 
 typedef struct programa {
     char* nome;
     mapa_t *tabela_simbolos;
+    lista_t *variaveis;
     lista_t *filhos;
 } programa_t;
 
@@ -73,7 +75,7 @@ typedef struct node {
 
 
 mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos);
-programa_t* criarNoPrograma(char* nome, mapa_t *tabela_simbolos, lista_t *filhos);
+programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos);
 ast_node_t* criarNoReal(double valor);
 ast_node_t* criarNoInteger(int valor);
 ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo);
@@ -86,6 +88,8 @@ ast_node_t* criarNoRepeat(ast_node_t* condicao, lista_t* codigo);
 ast_node_t* criarNoForTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo);
 ast_node_t* criarNoForDownTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo);
 ast_node_t* criarNoASM(char* asmStr);
+ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo);
+
 
 void printAST(programa_t* programa);
 

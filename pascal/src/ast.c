@@ -40,11 +40,11 @@ mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, m
 	return tabela_simbolos;
 }
 
-programa_t* criarNoPrograma(char* nome, mapa_t *tabela_simbolos, lista_t *filhos) {
+programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos) {
 	programa_t* programa = malloc(sizeof(programa_t));
 	programa->nome = malloc(sizeof(char) * strlen(nome) + 1);
 	strcpy(programa->nome, nome);
-	programa->tabela_simbolos = tabela_simbolos;
+	programa->variaveis = variaveis;
 	programa->filhos = filhos;
 
 	return programa;
@@ -147,6 +147,14 @@ ast_node_t* criarNoASM(char* asmStr) {
 	no->tipo = TAN_ASM;
 	no->valor.strVal = malloc(sizeof(char) * (strlen(asmStr) + 1));
 	strcpy(no->valor.strVal, asmStr);
+	return no;
+}
+
+ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_DECLARACAO_VAR;
+	no->filhos = addListaNaLista(vars, NULL);
+	no->valor.iVal = tipo;
 	return no;
 }
 
