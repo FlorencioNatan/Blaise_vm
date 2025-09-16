@@ -53,6 +53,7 @@ programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos) {
 ast_node_t* criarNoReal(double valor) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_REAL;
+	no->tipo_dados = TIPO_PRIMITIVO_REAL;
 	no->valor.dVal = valor;
 	return no;
 }
@@ -60,6 +61,7 @@ ast_node_t* criarNoReal(double valor) {
 ast_node_t* criarNoInteger(int valor) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_INTEGER;
+	no->tipo_dados = TIPO_PRIMITIVO_INTEGER;
 	no->valor.iVal = valor;
 	return no;
 }
@@ -67,6 +69,7 @@ ast_node_t* criarNoInteger(int valor) {
 ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = tipo;
+	no->tipo_dados = TIPO_PRIMITIVO_NAO_PREENCHIDO;
 	no->filhos = addNoASTNaLista(rhs, NULL);
 	no->filhos = addNoASTNaLista(lhs, no->filhos);
 	return no;
@@ -75,6 +78,7 @@ ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tip
 ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = tipo;
+	no->tipo_dados = TIPO_PRIMITIVO_NAO_PREENCHIDO;
 	no->filhos = addNoASTNaLista(op, NULL);
 	return no;
 }
@@ -82,6 +86,7 @@ ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo) {
 ast_node_t* criarNoVariavel(char* nomeVariavel) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_VARIAVEL;
+	no->tipo_dados = TIPO_PRIMITIVO_NAO_PREENCHIDO;
 	no->valor.strVal = malloc(sizeof(char) * (strlen(nomeVariavel) + 1));
 	strcpy(no->valor.strVal, nomeVariavel);
 	return no;
@@ -90,6 +95,7 @@ ast_node_t* criarNoVariavel(char* nomeVariavel) {
 ast_node_t* criarNoAtribuicao(char* lhs, ast_node_t* rhs) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_ATRIBUICAO;
+	no->tipo_dados = TIPO_PRIMITIVO_NAO_PREENCHIDO;
 	no->filhos = addNoASTNaLista(rhs, NULL);
 	no->filhos = addNoASTNaLista(criarNoVariavel(lhs), no->filhos);
 	return no;
@@ -171,7 +177,184 @@ void criarTabelaDeSimbolos(programa_t *programa) {
 			declaracao->valor.iVal,
 			programa->tabela_simbolos
 		);
-		declaracoes = declaracoes->proximo;
+		declaracoes = caudaDaLista(declaracoes);
+	}
+}
+
+char *retornaNomeDoTipo(int tipo) {
+	switch (tipo){
+	case TIPO_PRIMITIVO_INTEGER:
+		return "Integer";
+	case TIPO_PRIMITIVO_STRING:
+		return "String";
+	case TIPO_PRIMITIVO_CHAR:
+		return "Char";
+	case TIPO_PRIMITIVO_BOOLEAN:
+		return "Boolean";
+	case TIPO_PRIMITIVO_REAL:
+		return "Real";
+	case TIPO_PRIMITIVO_NAO_PREENCHIDO:
+		return "Tipo não detectado";
+	default:
+		return "Tipo inválido";
+	}
+}
+
+void imprimirMensagemDeErroDeTipo(int linha, int tipoUm, int tipoDois) {
+	printf("** Linha %d: Tipos incompativeis: %s, %s.\n", 1, retornaNomeDoTipo(tipoUm), retornaNomeDoTipo(tipoDois));
+}
+
+void verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
+	ast_node_t *lhsNode = NULL;
+	ast_node_t *rhsNode = NULL;
+	variavel_t* variavel;
+	switch (expressao->tipo) {
+	case TAN_VARIAVEL:
+		variavel = buscarVariavelNoMapa(expressao->valor.strVal, programa->tabela_simbolos);
+		expressao->tipo_dados = variavel->tipo;
+		break;
+	case TAN_IGUAL:
+	case TAN_DIFERENTE:
+	case TAN_MAIOR:
+	case TAN_MAIOR_IGUAL:
+	case TAN_MENOR:
+	case TAN_MENOR_IGUAL:
+		lhsNode = expressao->filhos->valor.astNode;
+		rhsNode = caudaDaLista(expressao->filhos)->valor.astNode;
+		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			verificarTipoDaExpressao(programa, lhsNode);
+		}
+		if (rhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			verificarTipoDaExpressao(programa, rhsNode);
+		}
+		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_REAL && rhsNode ->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+			expressao->tipo_dados = TIPO_PRIMITIVO_BOOLEAN;
+			return;
+		}
+		if (lhsNode->tipo_dados != rhsNode->tipo_dados) {
+			imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, rhsNode->tipo_dados);
+			return;
+		}
+		expressao->tipo_dados = TIPO_PRIMITIVO_BOOLEAN;
+		break;
+	case TAN_AND:
+	case TAN_OR:
+		lhsNode = expressao->filhos->valor.astNode;
+		rhsNode = caudaDaLista(expressao->filhos)->valor.astNode;
+		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			verificarTipoDaExpressao(programa, lhsNode);
+		}
+		if (rhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			verificarTipoDaExpressao(programa, rhsNode);
+		}
+		if (lhsNode->tipo_dados != rhsNode->tipo_dados || lhsNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
+			imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, rhsNode->tipo_dados);
+			return;
+		}
+		expressao->tipo_dados = TIPO_PRIMITIVO_BOOLEAN;
+		break;
+	case TAN_NOT:
+		lhsNode = expressao->filhos->valor.astNode;
+		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			verificarTipoDaExpressao(programa, lhsNode);
+		}
+		if (lhsNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
+			imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
+			return;
+		}
+		expressao->tipo_dados = TIPO_PRIMITIVO_BOOLEAN;
+		break;
+	case TAN_SOMA:
+	case TAN_SUBTRACAO:
+	case TAN_MULTIPLICACAO:
+	case TAN_DIVISAO:
+		lhsNode = expressao->filhos->valor.astNode;
+		rhsNode = caudaDaLista(expressao->filhos)->valor.astNode;
+		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			verificarTipoDaExpressao(programa, lhsNode);
+		}
+		if (rhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			verificarTipoDaExpressao(programa, rhsNode);
+		}
+		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_REAL && rhsNode ->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+			expressao->tipo_dados = TIPO_PRIMITIVO_REAL;
+			return;
+		}
+		if (rhsNode->tipo_dados == TIPO_PRIMITIVO_REAL && lhsNode ->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+			expressao->tipo_dados = TIPO_PRIMITIVO_REAL;
+			return;
+		}
+		if (
+			lhsNode->tipo_dados != rhsNode->tipo_dados ||
+			(lhsNode->tipo_dados != TIPO_PRIMITIVO_INTEGER &&
+			lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL
+			)
+		) {
+			imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, rhsNode->tipo_dados);
+			return;
+		}
+		expressao->tipo_dados = lhsNode->tipo_dados;
+		break;
+	case TAN_NEGATIVACAO:
+		lhsNode = expressao->filhos->valor.astNode;
+		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			verificarTipoDaExpressao(programa, lhsNode);
+		}
+		if (lhsNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
+			imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
+			return;
+		}
+		expressao->tipo_dados = TIPO_PRIMITIVO_BOOLEAN;
+		break;
+		break;
+	default: break;
+	}
+
+}
+
+void verificarTipoAtribuicao(programa_t *programa, ast_node_t* atribuicao) {
+	lista_t *lhs = atribuicao->filhos;
+	lista_t *rhs = caudaDaLista(atribuicao->filhos);
+	ast_node_t *lhsNode = lhs->valor.astNode;
+	ast_node_t *rhsNode = rhs->valor.astNode;
+
+	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+		variavel_t* variavel = buscarVariavelNoMapa(lhsNode->valor.strVal, programa->tabela_simbolos);
+		lhsNode->tipo_dados = variavel->tipo;
+	}
+
+	if (rhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+		verificarTipoDaExpressao(programa, rhsNode);
+	}
+
+	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_REAL && rhsNode ->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+		atribuicao->tipo_dados = lhsNode ->tipo_dados;
+		return;
+	}
+
+	if (lhsNode->tipo_dados != rhsNode->tipo_dados) {
+		imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, rhsNode->tipo_dados);
+		return;
+	}
+	atribuicao->tipo_dados = lhsNode ->tipo_dados;
+}
+
+void verificarTiposDoPrograma(programa_t *programa) {
+	lista_t *statements = programa->filhos;
+	while (statements != NULL) {
+		ast_node_t* statement = statements->valor.astNode;
+		if (statement == NULL) {
+			return;
+		}
+
+		switch (statement->tipo) {
+		case TAN_ATRIBUICAO:
+			verificarTipoAtribuicao(programa, statement);
+			break;
+		default:
+			break;
+		}
+		statements = caudaDaLista(statements);
 	}
 }
 
@@ -255,6 +438,8 @@ void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 		break;
 	case TAN_ASM:
 		sprintf(descricaoNoAST, "ASM: %s", noAST->valor.strVal);
+		break;
+	case TAN_DECLARACAO_VAR:
 		break;
 	}
 	Agnode_t *f = agnode(g, descricaoNoAST, 1);

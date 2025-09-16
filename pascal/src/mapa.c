@@ -203,6 +203,14 @@ mapa_t* addVariavelNoMapa(char *chave, variavel_t *valor, mapa_t *mapa) {
 	return addNodeNoMapa(novoNo, mapa);
 }
 
+variavel_t* buscarVariavelNoMapa(char *chave, mapa_t *mapa) {
+	no_t *resutlado = buscarChaveNoMapa(chave, mapa);
+	if (resutlado->tipo != TC_VARIAVEL) {
+		return NULL;
+	}
+	return resutlado->valor.varVal;
+}
+
 void transplanteNosNoMapa(no_t* u, no_t* v, mapa_t *mapa) {
 	if (u->pai == mapa->nil) {
 		mapa->raiz = v;

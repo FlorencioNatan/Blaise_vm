@@ -9,6 +9,7 @@
 #define TIPO_PRIMITIVO_CHAR 2
 #define TIPO_PRIMITIVO_BOOLEAN 3
 #define TIPO_PRIMITIVO_REAL 4
+#define TIPO_PRIMITIVO_NAO_PREENCHIDO -1
 
 typedef union {
 	int iVal;
@@ -69,6 +70,7 @@ typedef struct variavel {
 
 typedef struct node {
 	tipo_ast_node_t tipo;
+	int tipo_dados;
 	valores_ast_node valor;
 	lista_t *filhos;
 } ast_node_t;
@@ -90,7 +92,7 @@ ast_node_t* criarNoForDownTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t
 ast_node_t* criarNoASM(char* asmStr);
 ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo);
 void criarTabelaDeSimbolos(programa_t *programa);
-
+void verificarTiposDoPrograma(programa_t *programa);
 
 void printAST(programa_t* programa);
 
