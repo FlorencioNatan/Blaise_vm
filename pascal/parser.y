@@ -145,6 +145,6 @@ int main(int argc, char **argv) {
 }
 
 void yyerror(const char *msg) {
-   printf("** Line %d: %s\n", yylloc.first_line, msg);
+   printf("** Linha %d: %s\n", yylloc.first_line, msg);
 }
 
