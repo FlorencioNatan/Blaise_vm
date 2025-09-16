@@ -40,68 +40,75 @@ mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, m
 	return tabela_simbolos;
 }
 
-programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos) {
+programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos, int linha) {
 	programa_t* programa = malloc(sizeof(programa_t));
 	programa->nome = malloc(sizeof(char) * strlen(nome) + 1);
 	strcpy(programa->nome, nome);
 	programa->variaveis = variaveis;
 	programa->filhos = filhos;
+	programa->linha = linha;
 
 	return programa;
 }
 
-ast_node_t* criarNoReal(double valor) {
+ast_node_t* criarNoReal(double valor, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_REAL;
 	no->tipo_dados = TIPO_PRIMITIVO_REAL;
 	no->valor.dVal = valor;
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoInteger(int valor) {
+ast_node_t* criarNoInteger(int valor, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_INTEGER;
 	no->tipo_dados = TIPO_PRIMITIVO_INTEGER;
 	no->valor.iVal = valor;
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo) {
+ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = tipo;
 	no->tipo_dados = TIPO_PRIMITIVO_NAO_PREENCHIDO;
 	no->filhos = addNoASTNaLista(rhs, NULL);
 	no->filhos = addNoASTNaLista(lhs, no->filhos);
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo) {
+ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = tipo;
 	no->tipo_dados = TIPO_PRIMITIVO_NAO_PREENCHIDO;
 	no->filhos = addNoASTNaLista(op, NULL);
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoVariavel(char* nomeVariavel) {
+ast_node_t* criarNoVariavel(char* nomeVariavel, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_VARIAVEL;
 	no->tipo_dados = TIPO_PRIMITIVO_NAO_PREENCHIDO;
 	no->valor.strVal = malloc(sizeof(char) * (strlen(nomeVariavel) + 1));
 	strcpy(no->valor.strVal, nomeVariavel);
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoAtribuicao(char* lhs, ast_node_t* rhs) {
+ast_node_t* criarNoAtribuicao(char* lhs, ast_node_t* rhs, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_ATRIBUICAO;
 	no->tipo_dados = TIPO_PRIMITIVO_NAO_PREENCHIDO;
 	no->filhos = addNoASTNaLista(rhs, NULL);
-	no->filhos = addNoASTNaLista(criarNoVariavel(lhs), no->filhos);
+	no->filhos = addNoASTNaLista(criarNoVariavel(lhs, linha), no->filhos);
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoIf(ast_node_t* condicao, lista_t* then_stmt, lista_t* else_stmt) {
+ast_node_t* criarNoIf(ast_node_t* condicao, lista_t* then_stmt, lista_t* else_stmt, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_IF;
 	if (else_stmt != NULL) {
@@ -111,56 +118,63 @@ ast_node_t* criarNoIf(ast_node_t* condicao, lista_t* then_stmt, lista_t* else_st
 		no->filhos = addListaNaLista(then_stmt, NULL);
 	}
 	no->filhos = addNoASTNaLista(condicao, no->filhos);
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoWhile(ast_node_t* condicao, lista_t* codigo) {
+ast_node_t* criarNoWhile(ast_node_t* condicao, lista_t* codigo, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_WHILE;
 	no->filhos = addListaNaLista(codigo, NULL);
 	no->filhos = addNoASTNaLista(condicao, no->filhos);
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoRepeat(ast_node_t* condicao, lista_t* codigo) {
+ast_node_t* criarNoRepeat(ast_node_t* condicao, lista_t* codigo, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_REPEAT;
 	no->filhos = addListaNaLista(codigo, NULL);
 	no->filhos = addNoASTNaLista(condicao, no->filhos);
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoForTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo) {
+ast_node_t* criarNoForTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_FORTO;
 	no->filhos = addListaNaLista(codigo, NULL);
 	no->filhos = addNoASTNaLista(ate, no->filhos);
 	no->filhos = addNoASTNaLista(inicializacao, no->filhos);
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoForDownTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo) {
+ast_node_t* criarNoForDownTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_FORDOWNTO;
 	no->filhos = addListaNaLista(codigo, NULL);
 	no->filhos = addNoASTNaLista(ate, no->filhos);
 	no->filhos = addNoASTNaLista(inicializacao, no->filhos);
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoASM(char* asmStr) {
+ast_node_t* criarNoASM(char* asmStr, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_ASM;
 	no->valor.strVal = malloc(sizeof(char) * (strlen(asmStr) + 1));
 	strcpy(no->valor.strVal, asmStr);
+	no->linha = linha;
 	return no;
 }
 
-ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo) {
+ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_DECLARACAO_VAR;
 	no->filhos = addListaNaLista(vars, NULL);
 	no->valor.iVal = tipo;
+	no->linha = linha;
 	return no;
 }
 
@@ -201,7 +215,7 @@ char *retornaNomeDoTipo(int tipo) {
 }
 
 void imprimirMensagemDeErroDeTipo(int linha, int tipoUm, int tipoDois) {
-	printf("** Linha %d: Tipos incompativeis: %s, %s.\n", 1, retornaNomeDoTipo(tipoUm), retornaNomeDoTipo(tipoDois));
+	printf("** Linha %d: Tipos incompativeis: %s, %s.\n", linha, retornaNomeDoTipo(tipoUm), retornaNomeDoTipo(tipoDois));
 }
 
 void verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
@@ -232,7 +246,7 @@ void verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 			return;
 		}
 		if (lhsNode->tipo_dados != rhsNode->tipo_dados) {
-			imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, rhsNode->tipo_dados);
+			imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, rhsNode->tipo_dados);
 			return;
 		}
 		expressao->tipo_dados = TIPO_PRIMITIVO_BOOLEAN;
@@ -248,7 +262,7 @@ void verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 			verificarTipoDaExpressao(programa, rhsNode);
 		}
 		if (lhsNode->tipo_dados != rhsNode->tipo_dados || lhsNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
-			imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, rhsNode->tipo_dados);
+			imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, rhsNode->tipo_dados);
 			return;
 		}
 		expressao->tipo_dados = TIPO_PRIMITIVO_BOOLEAN;
@@ -259,7 +273,7 @@ void verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 			verificarTipoDaExpressao(programa, lhsNode);
 		}
 		if (lhsNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
-			imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
+			imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
 			return;
 		}
 		expressao->tipo_dados = TIPO_PRIMITIVO_BOOLEAN;
@@ -290,7 +304,7 @@ void verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 			lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL
 			)
 		) {
-			imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, rhsNode->tipo_dados);
+			imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, rhsNode->tipo_dados);
 			return;
 		}
 		expressao->tipo_dados = lhsNode->tipo_dados;
@@ -301,7 +315,7 @@ void verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 			verificarTipoDaExpressao(programa, lhsNode);
 		}
 		if (lhsNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
-			imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
+			imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
 			return;
 		}
 		expressao->tipo_dados = TIPO_PRIMITIVO_BOOLEAN;
@@ -333,7 +347,7 @@ void verificarTipoAtribuicao(programa_t *programa, ast_node_t* atribuicao) {
 	}
 
 	if (lhsNode->tipo_dados != rhsNode->tipo_dados) {
-		imprimirMensagemDeErroDeTipo(1, lhsNode->tipo_dados, rhsNode->tipo_dados);
+		imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, rhsNode->tipo_dados);
 		return;
 	}
 	atribuicao->tipo_dados = lhsNode ->tipo_dados;

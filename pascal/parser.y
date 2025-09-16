@@ -60,7 +60,7 @@ programa_t* programa;
 
 
 %% 
-init:	KW_PROGRAM IDENTIFICADOR PONTO_E_VIRGULA var_declaracao KW_BEGIN statements KW_END PONTO { programa = criarNoPrograma($2, $4, $6); /*printAST(programa); printf("%s", $2);*/ }
+init:	KW_PROGRAM IDENTIFICADOR PONTO_E_VIRGULA var_declaracao KW_BEGIN statements KW_END PONTO { programa = criarNoPrograma($2, $4, $6, yylloc.first_line); /*printAST(programa); printf("%s", $2);*/ }
 
 var_declaracao:	{/* */}
 					| KW_VAR var_linhas_declaracao { $$ = $2; /* printMapa(tabela_simbolos); */ }
@@ -68,7 +68,7 @@ var_declaracao:	{/* */}
 var_linhas_declaracao:	var_linha_declaracao PONTO_E_VIRGULA              { $$ = addNoASTNaLista($1, NULL); }
 						| var_linhas_declaracao var_linha_declaracao PONTO_E_VIRGULA { $$ = addNoASTNaLista($2, $1); }
 
-var_linha_declaracao:	var_lista DOIS_PONTOS var_tipos { $$ = criarNoDeclaracaoVar($1, $3);/* $$ = $1; tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos($1, $3, tabela_simbolos);*/ }
+var_linha_declaracao:	var_lista DOIS_PONTOS var_tipos { $$ = criarNoDeclaracaoVar($1, $3, yylloc.first_line);/* $$ = $1; tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos($1, $3, tabela_simbolos);*/ }
 
 var_lista:	IDENTIFICADOR { $$ = addStringNaLista($1, NULL); }
 		| IDENTIFICADOR VIRGULA var_lista { $$ = addStringNaLista($1, $3); }
@@ -86,46 +86,46 @@ statement: { $$ = NULL; }
             | while_statment { $$ = $1; }
             | repeat_statment { $$ = $1; }
             | for_statment { $$ = $1; }
-            | ASM { $$ = criarNoASM($1); }
+            | ASM { $$ = criarNoASM($1, yylloc.first_line); }
             ;
 
 statements: statement { $$ = addNoASTNaLista($1, NULL); }
             | statement PONTO_E_VIRGULA statements { $$ = addNoASTNaLista($1, $3); }
             ;
 
-atribuicao_statement: IDENTIFICADOR WALRUS exp { $$ = criarNoAtribuicao($1, $3); };
+atribuicao_statement: IDENTIFICADOR WALRUS exp { $$ = criarNoAtribuicao($1, $3, yylloc.first_line); };
 
-if_statement: KW_IF exp KW_THEN KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, NULL); }
-			  | KW_IF exp KW_THEN KW_BEGIN statements KW_END KW_ELSE KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, $9); }
+if_statement: KW_IF exp KW_THEN KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, NULL, yylloc.first_line); }
+			  | KW_IF exp KW_THEN KW_BEGIN statements KW_END KW_ELSE KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, $9, yylloc.first_line); }
 			  ;
 
-while_statment: KW_WHILE exp KW_DO KW_BEGIN statements KW_END { $$ = criarNoWhile($2, $5); };
+while_statment: KW_WHILE exp KW_DO KW_BEGIN statements KW_END { $$ = criarNoWhile($2, $5, yylloc.first_line); };
 
-repeat_statment: KW_REPEAT statements KW_UNTIL exp { $$ = criarNoRepeat($4, $2); };
+repeat_statment: KW_REPEAT statements KW_UNTIL exp { $$ = criarNoRepeat($4, $2, yylloc.first_line); };
 
-for_statment: KW_FOR atribuicao_statement KW_TO exp KW_DO KW_BEGIN statements KW_END { $$ = criarNoForTo($2, $4, $7); }
-			  | KW_FOR atribuicao_statement KW_DOWNTO exp KW_DO KW_BEGIN statements KW_END { $$ = criarNoForDownTo($2, $4, $7); }
+for_statment: KW_FOR atribuicao_statement KW_TO exp KW_DO KW_BEGIN statements KW_END { $$ = criarNoForTo($2, $4, $7, yylloc.first_line); }
+			  | KW_FOR atribuicao_statement KW_DOWNTO exp KW_DO KW_BEGIN statements KW_END { $$ = criarNoForDownTo($2, $4, $7, yylloc.first_line); }
 			  ;
 
-exp:		REAL                  { $$ = criarNoReal($1); }
-			| INTEGER             { $$ = criarNoInteger($1); }
-			| IDENTIFICADOR       { $$ = criarNoVariavel($1); }
-			| exp MAIS exp        { $$ = criarNoBinario($1, $3, TAN_SOMA); }
-			| exp MENOS exp       { $$ = criarNoBinario($1, $3, TAN_SUBTRACAO); }
-			| exp MULTIPLICACAO exp        { $$ = criarNoBinario($1, $3, TAN_MULTIPLICACAO); }
-			| exp DIVISAO exp         { if ($3==0) yyerror("divide by zero"); else $$ = criarNoBinario($1, $3, TAN_DIVISAO); }
-			| MENOS exp %prec UMINUS { $$ = criarNoUnario($2, TAN_NEGATIVACAO); }
+exp:		REAL                  { $$ = criarNoReal($1, yylloc.first_line); }
+			| INTEGER             { $$ = criarNoInteger($1, yylloc.first_line); }
+			| IDENTIFICADOR       { $$ = criarNoVariavel($1, yylloc.first_line); }
+			| exp MAIS exp        { $$ = criarNoBinario($1, $3, TAN_SOMA, yylloc.first_line); }
+			| exp MENOS exp       { $$ = criarNoBinario($1, $3, TAN_SUBTRACAO, yylloc.first_line); }
+			| exp MULTIPLICACAO exp        { $$ = criarNoBinario($1, $3, TAN_MULTIPLICACAO, yylloc.first_line); }
+			| exp DIVISAO exp         { if ($3==0) yyerror("divide by zero"); else $$ = criarNoBinario($1, $3, TAN_DIVISAO, yylloc.first_line); }
+			| MENOS exp %prec UMINUS { $$ = criarNoUnario($2, TAN_NEGATIVACAO, yylloc.first_line); }
 
-			| exp IGUAL exp       { $$ = criarNoBinario($1, $3, TAN_IGUAL); }
-			| exp DIFERENTE exp       { $$ = criarNoBinario($1, $3, TAN_DIFERENTE); }
-			| exp MAIOR exp       { $$ = criarNoBinario($1, $3, TAN_MAIOR); }
-			| exp MAIOR_IGUAL exp       { $$ = criarNoBinario($1, $3, TAN_MAIOR_IGUAL); }
-			| exp MENOR exp       { $$ = criarNoBinario($1, $3, TAN_MENOR); }
-			| exp MENOR_IGUAL exp       { $$ = criarNoBinario($1, $3, TAN_MENOR_IGUAL); }
+			| exp IGUAL exp       { $$ = criarNoBinario($1, $3, TAN_IGUAL, yylloc.first_line); }
+			| exp DIFERENTE exp       { $$ = criarNoBinario($1, $3, TAN_DIFERENTE, yylloc.first_line); }
+			| exp MAIOR exp       { $$ = criarNoBinario($1, $3, TAN_MAIOR, yylloc.first_line); }
+			| exp MAIOR_IGUAL exp       { $$ = criarNoBinario($1, $3, TAN_MAIOR_IGUAL, yylloc.first_line); }
+			| exp MENOR exp       { $$ = criarNoBinario($1, $3, TAN_MENOR, yylloc.first_line); }
+			| exp MENOR_IGUAL exp       { $$ = criarNoBinario($1, $3, TAN_MENOR_IGUAL, yylloc.first_line); }
 
-			| exp KW_AND exp       { $$ = criarNoBinario($1, $3, TAN_AND); }
-			| exp KW_OR exp       { $$ = criarNoBinario($1, $3, TAN_OR); }
-			| KW_NOT exp       { $$ = criarNoUnario($2, TAN_NOT); }
+			| exp KW_AND exp       { $$ = criarNoBinario($1, $3, TAN_AND, yylloc.first_line); }
+			| exp KW_OR exp       { $$ = criarNoBinario($1, $3, TAN_OR, yylloc.first_line); }
+			| KW_NOT exp       { $$ = criarNoUnario($2, TAN_NOT, yylloc.first_line); }
 			| L_PAREN exp R_PAREN { $$ = $2; }
 			;
 

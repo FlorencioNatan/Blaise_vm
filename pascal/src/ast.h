@@ -53,6 +53,7 @@ typedef struct programa {
     mapa_t *tabela_simbolos;
     lista_t *variaveis;
     lista_t *filhos;
+    int linha;
 } programa_t;
 
 typedef union {
@@ -71,26 +72,27 @@ typedef struct variavel {
 typedef struct node {
 	tipo_ast_node_t tipo;
 	int tipo_dados;
+	int linha;
 	valores_ast_node valor;
 	lista_t *filhos;
 } ast_node_t;
 
 
 mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos);
-programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos);
-ast_node_t* criarNoReal(double valor);
-ast_node_t* criarNoInteger(int valor);
-ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo);
-ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo);
-ast_node_t* criarNoVariavel(char* nomeVariavel);
-ast_node_t* criarNoAtribuicao(char* lhs, ast_node_t* rhs);
-ast_node_t* criarNoIf(ast_node_t* condicao, lista_t* then_stmt, lista_t* else_stmt);
-ast_node_t* criarNoWhile(ast_node_t* condicao, lista_t* codigo);
-ast_node_t* criarNoRepeat(ast_node_t* condicao, lista_t* codigo);
-ast_node_t* criarNoForTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo);
-ast_node_t* criarNoForDownTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo);
-ast_node_t* criarNoASM(char* asmStr);
-ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo);
+programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos, int linha);
+ast_node_t* criarNoReal(double valor, int linha);
+ast_node_t* criarNoInteger(int valor, int linha);
+ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo, int linha);
+ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo, int linha);
+ast_node_t* criarNoVariavel(char* nomeVariavel, int linha);
+ast_node_t* criarNoAtribuicao(char* lhs, ast_node_t* rhs, int linha);
+ast_node_t* criarNoIf(ast_node_t* condicao, lista_t* then_stmt, lista_t* else_stmt, int linha);
+ast_node_t* criarNoWhile(ast_node_t* condicao, lista_t* codigo, int linha);
+ast_node_t* criarNoRepeat(ast_node_t* condicao, lista_t* codigo, int linha);
+ast_node_t* criarNoForTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo, int linha);
+ast_node_t* criarNoForDownTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo, int linha);
+ast_node_t* criarNoASM(char* asmStr, int linha);
+ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo, int linha);
 void criarTabelaDeSimbolos(programa_t *programa);
 void verificarTiposDoPrograma(programa_t *programa);
 
