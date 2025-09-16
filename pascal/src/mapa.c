@@ -114,8 +114,8 @@ void corrigirViolacoesInsercaoNoMapa (no_t *no, mapa_t *mapa) {
 		}
 
 		if (cor_tio == COR_PRETO) {
-			if (strcmp(pai->chave, avo->esquerda->chave) == 0) {
-				if (strcmp(no->chave, pai->direita->chave) == 0) { // Filho direito de um filho esquerdo
+			if (avo->esquerda->chave != NULL && strcmp(pai->chave, avo->esquerda->chave) == 0) {
+				if (pai->direita->chave != NULL && strcmp(no->chave, pai->direita->chave) == 0) { // Filho direito de um filho esquerdo
 					no = pai;                                  // Caso 2
 					rotacionarEsquerda(no, mapa);              // Caso 2
 				}
@@ -123,7 +123,7 @@ void corrigirViolacoesInsercaoNoMapa (no_t *no, mapa_t *mapa) {
 				no->pai->pai->cor = COR_VERMELHO;              // Caso 3
 				rotacionarDireita(no->pai->pai, mapa);         // Caso 3
 			} else {
-				if (strcmp(no->chave, pai->esquerda->chave) == 0) {  // Filho esquerdo de um filho direito
+				if (pai->esquerda->chave != NULL && strcmp(no->chave, pai->esquerda->chave) == 0) {  // Filho esquerdo de um filho direito
 					no = pai;                                  // Caso 4
 					rotacionarDireita(no, mapa);               // Caso 4
 				}
@@ -326,7 +326,12 @@ void printNo(no_t *no, mapa_t *mapa, GVC_t *gvc, Agraph_t *g) {
 	}
 	if (no->pai != mapa->nil) {
 		Agnode_t *p = agnode(g, no->pai->chave, 1);
-		(void)agedge(g, p, n, 0, 1);
+		if (no->pai->esquerda == no) {
+			(void)agedge(g, p, n, "E1", 1);
+			(void)agedge(g, p, n, "E2", 1);
+		} else {
+			(void)agedge(g, p, n, "D", 1);
+		}
 	}
 	printNo(no->esquerda, mapa, gvc, g);
 	printNo(no->direita, mapa, gvc, g);
