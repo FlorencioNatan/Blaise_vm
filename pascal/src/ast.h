@@ -89,6 +89,7 @@ ast_node_t* criarNoForTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* co
 ast_node_t* criarNoForDownTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo);
 ast_node_t* criarNoASM(char* asmStr);
 ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo);
+void criarTabelaDeSimbolos(programa_t *programa);
 
 
 void printAST(programa_t* programa);

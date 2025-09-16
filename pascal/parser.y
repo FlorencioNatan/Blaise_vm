@@ -140,6 +140,7 @@ int main(int argc, char **argv) {
       }//end if
    }//end if
    yyparse(); // Calls yylex() for tokens.
+   criarTabelaDeSimbolos(programa);
    return 0;
 }
 

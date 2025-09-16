@@ -158,6 +158,23 @@ ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo) {
 	return no;
 }
 
+void criarTabelaDeSimbolos(programa_t *programa) {
+	if (programa == NULL) {
+		return;
+	}
+
+	lista_t *declaracoes = programa->variaveis;
+	while (declaracoes != NULL) {
+		ast_node_t* declaracao = declaracoes->valor.astNode;
+		programa->tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos(
+			declaracao->filhos->valor.lista,
+			declaracao->valor.iVal,
+			programa->tabela_simbolos
+		);
+		declaracoes = declaracoes->proximo;
+	}
+}
+
 void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 	if (noAST == NULL) {
 		return;
