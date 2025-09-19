@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <graphviz/gvc.h>
 
+void verificarTiposDosStatements(programa_t *programa, lista_t *statements);
+
 mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos) {
 	while (variaveis != NULL) {
 		if (variaveis->tipo != TC_STRING) {
@@ -215,7 +217,7 @@ char *retornaNomeDoTipo(int tipo) {
 }
 
 void imprimirMensagemDeErroDeTipo(int linha, int tipoUm, int tipoDois) {
-	printf("** Linha %d: Tipos incompativeis: %s, %s.\n", linha, retornaNomeDoTipo(tipoUm), retornaNomeDoTipo(tipoDois));
+	printf("** Linha %d: Tipos incompativeis. Esperado: %s, encontrado: %s.\n", linha, retornaNomeDoTipo(tipoUm), retornaNomeDoTipo(tipoDois));
 }
 
 void verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
@@ -353,8 +355,100 @@ void verificarTipoAtribuicao(programa_t *programa, ast_node_t* atribuicao) {
 	atribuicao->tipo_dados = lhsNode ->tipo_dados;
 }
 
-void verificarTiposDoPrograma(programa_t *programa) {
-	lista_t *statements = programa->filhos;
+void verificarTipoIf(programa_t *programa, ast_node_t* atribuicao) {
+	lista_t *condicao = atribuicao->filhos;
+	lista_t *then_stmts = caudaDaLista(atribuicao->filhos);
+	lista_t *else_stmts = caudaDaLista(then_stmts);
+
+	ast_node_t *condicaoNode = condicao->valor.astNode;
+
+	if (condicaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+		verificarTipoDaExpressao(programa, condicaoNode);
+	}
+
+	if (condicaoNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
+		imprimirMensagemDeErroDeTipo(condicaoNode->linha, condicaoNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
+	}
+
+	if (then_stmts != NULL) {
+		verificarTiposDosStatements(programa, then_stmts->valor.lista);
+	}
+
+	if (else_stmts != NULL) {
+		verificarTiposDosStatements(programa, else_stmts->valor.lista);
+	}
+}
+
+void verificarTipoWhile(programa_t *programa, ast_node_t* atribuicao) {
+	lista_t *condicao = atribuicao->filhos;
+	lista_t *codigo = caudaDaLista(atribuicao->filhos);
+
+	ast_node_t *condicaoNode = condicao->valor.astNode;
+
+	if (condicaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+		verificarTipoDaExpressao(programa, condicaoNode);
+	}
+
+	if (condicaoNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
+		imprimirMensagemDeErroDeTipo(condicaoNode->linha, condicaoNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
+	}
+
+	if (codigo != NULL) {
+		verificarTiposDosStatements(programa, codigo->valor.lista);
+	}
+}
+
+void verificarTipoRepeat(programa_t *programa, ast_node_t* atribuicao) {
+	lista_t *condicao = atribuicao->filhos;
+	lista_t *codigo = caudaDaLista(atribuicao->filhos);
+
+	ast_node_t *condicaoNode = condicao->valor.astNode;
+
+	if (condicaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+		verificarTipoDaExpressao(programa, condicaoNode);
+	}
+
+	if (codigo != NULL) {
+		verificarTiposDosStatements(programa, codigo->valor.lista);
+	}
+
+	if (condicaoNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
+		imprimirMensagemDeErroDeTipo(condicaoNode->linha, condicaoNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
+	}
+}
+
+void verificarTipoFor(programa_t *programa, ast_node_t* atribuicao) {
+	lista_t *inicializacao = atribuicao->filhos;
+	lista_t *ate = caudaDaLista(inicializacao);
+	lista_t *codigo = caudaDaLista(ate);
+
+	ast_node_t *inicializacaoNode = inicializacao->valor.astNode;
+	ast_node_t *ateNode = ate->valor.astNode;
+
+	if (inicializacaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+		verificarTipoAtribuicao(programa, inicializacaoNode);
+	}
+
+	if (inicializacaoNode->tipo_dados != TIPO_PRIMITIVO_INTEGER && inicializacaoNode->tipo_dados != TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+		imprimirMensagemDeErroDeTipo(inicializacaoNode->linha, inicializacaoNode->tipo_dados, TIPO_PRIMITIVO_INTEGER);
+	}
+
+
+	if (ateNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+		verificarTipoDaExpressao(programa, ateNode);
+	}
+
+	if (ateNode->tipo_dados != TIPO_PRIMITIVO_INTEGER) {
+		imprimirMensagemDeErroDeTipo(ateNode->linha, ateNode->tipo_dados, TIPO_PRIMITIVO_INTEGER);
+	}
+
+
+	if (codigo != NULL) {
+		verificarTiposDosStatements(programa, codigo->valor.lista);
+	}
+}
+
+void verificarTiposDosStatements(programa_t *programa, lista_t *statements) {
 	while (statements != NULL) {
 		ast_node_t* statement = statements->valor.astNode;
 		if (statement == NULL) {
@@ -365,11 +459,27 @@ void verificarTiposDoPrograma(programa_t *programa) {
 		case TAN_ATRIBUICAO:
 			verificarTipoAtribuicao(programa, statement);
 			break;
+		case TAN_IF:
+			verificarTipoIf(programa, statement);
+			break;
+		case TAN_WHILE:
+			verificarTipoWhile(programa, statement);
+			break;
+		case TAN_REPEAT:
+			verificarTipoRepeat(programa, statement);
+			break;
+		case TAN_FORTO:
+		case TAN_FORDOWNTO:
+			verificarTipoFor(programa, statement);
 		default:
 			break;
 		}
 		statements = caudaDaLista(statements);
 	}
+}
+
+void verificarTiposDoPrograma(programa_t *programa) {
+	verificarTiposDosStatements(programa, programa->filhos);
 }
 
 void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
