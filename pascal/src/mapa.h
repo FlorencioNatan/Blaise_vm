@@ -2,6 +2,7 @@
 #define MAPA_H
 
 #include "tipos_colecao.h"
+#include <stdbool.h>
 
 #define COR_PRETO 0
 #define COR_VERMELHO 1
@@ -28,6 +29,7 @@ mapa_t* addStringNoMapa(char *chave, char *valor, mapa_t *mapa);
 mapa_t* addIntNoMapa(char *chave, int valor, mapa_t *mapa);
 mapa_t* addVariavelNoMapa(char *chave, variavel_t *valor, mapa_t *mapa);
 variavel_t* buscarVariavelNoMapa(char *chave, mapa_t *mapa);
+bool contemChaveNoMapa(char *chave, mapa_t *mapa);
 
 void removerChaveDoMapa(char *chave, mapa_t *mapa);
 void printMapa(mapa_t *mapa);

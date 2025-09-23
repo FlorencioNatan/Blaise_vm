@@ -211,6 +211,10 @@ variavel_t* buscarVariavelNoMapa(char *chave, mapa_t *mapa) {
 	return resutlado->valor.varVal;
 }
 
+bool contemChaveNoMapa(char *chave, mapa_t *mapa) {
+	return buscarChaveNoMapa(chave, mapa) != mapa->nil;
+}
+
 void transplanteNosNoMapa(no_t* u, no_t* v, mapa_t *mapa) {
 	if (u->pai == mapa->nil) {
 		mapa->raiz = v;

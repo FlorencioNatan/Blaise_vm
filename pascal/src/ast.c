@@ -5,9 +5,10 @@
 
 void verificarTiposDosStatements(programa_t *programa, lista_t *statements);
 
-mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos) {
+mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int linha) {
 	while (variaveis != NULL) {
 		if (variaveis->tipo != TC_STRING) {
+			variaveis = caudaDaLista(variaveis);
 			continue;
 		}
 
@@ -15,6 +16,12 @@ mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, m
 		variavel->nome = malloc(sizeof(char) * strlen(variaveis->valor.strVal) + 1);
 		strcpy(variavel->nome, variaveis->valor.strVal);
 		variavel->tipo = tipo;
+
+		if (tabela_simbolos != NULL && contemChaveNoMapa(variavel->nome, tabela_simbolos)) {
+			printf("** Linha %d: A variável \"%s\" já foi declarada anteriormente.\n", linha, variavel->nome);
+			variaveis = caudaDaLista(variaveis);
+			continue;
+		}
 
 		switch (tipo) {
 			case TIPO_PRIMITIVO_INTEGER:
@@ -191,7 +198,8 @@ void criarTabelaDeSimbolos(programa_t *programa) {
 		programa->tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos(
 			declaracao->filhos->valor.lista,
 			declaracao->valor.iVal,
-			programa->tabela_simbolos
+			programa->tabela_simbolos,
+			declaracao->linha
 		);
 		declaracoes = caudaDaLista(declaracoes);
 	}

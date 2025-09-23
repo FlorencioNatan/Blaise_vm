@@ -78,7 +78,7 @@ typedef struct node {
 } ast_node_t;
 
 
-mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos);
+mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int linha);
 programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos, int linha);
 ast_node_t* criarNoReal(double valor, int linha);
 ast_node_t* criarNoInteger(int valor, int linha);
