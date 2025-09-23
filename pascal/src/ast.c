@@ -220,14 +220,28 @@ void imprimirMensagemDeErroDeTipo(int linha, int tipoUm, int tipoDois) {
 	printf("** Linha %d: Tipos incompativeis. Esperado: %s, encontrado: %s.\n", linha, retornaNomeDoTipo(tipoUm), retornaNomeDoTipo(tipoDois));
 }
 
+variavel_t* buscaVariavel(char *chave, mapa_t *mapa, int linha) {
+	variavel_t* variavel;
+	variavel = buscarVariavelNoMapa(chave, mapa);
+
+	if (variavel == NULL) {
+		printf("** Linha %d: Variável \"%s\" não declarada.\n", linha, chave);
+		return NULL;
+	}
+
+	return variavel;
+}
+
 void verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 	ast_node_t *lhsNode = NULL;
 	ast_node_t *rhsNode = NULL;
 	variavel_t* variavel;
 	switch (expressao->tipo) {
 	case TAN_VARIAVEL:
-		variavel = buscarVariavelNoMapa(expressao->valor.strVal, programa->tabela_simbolos);
-		expressao->tipo_dados = variavel->tipo;
+		variavel = buscaVariavel(expressao->valor.strVal, programa->tabela_simbolos, expressao->linha);
+		if (variavel != NULL) {
+			expressao->tipo_dados = variavel->tipo;
+		}
 		break;
 	case TAN_IGUAL:
 	case TAN_DIFERENTE:
@@ -335,7 +349,10 @@ void verificarTipoAtribuicao(programa_t *programa, ast_node_t* atribuicao) {
 	ast_node_t *rhsNode = rhs->valor.astNode;
 
 	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		variavel_t* variavel = buscarVariavelNoMapa(lhsNode->valor.strVal, programa->tabela_simbolos);
+		variavel_t* variavel = buscaVariavel(lhsNode->valor.strVal, programa->tabela_simbolos, lhsNode->linha);
+		if (variavel == NULL) {
+			return;
+		}
 		lhsNode->tipo_dados = variavel->tipo;
 	}
 
@@ -471,6 +488,7 @@ void verificarTiposDosStatements(programa_t *programa, lista_t *statements) {
 		case TAN_FORTO:
 		case TAN_FORDOWNTO:
 			verificarTipoFor(programa, statement);
+			break;
 		default:
 			break;
 		}
