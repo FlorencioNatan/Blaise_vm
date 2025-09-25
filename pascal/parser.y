@@ -140,8 +140,14 @@ int main(int argc, char **argv) {
       }//end if
    }//end if
    yyparse(); // Calls yylex() for tokens.
-   criarTabelaDeSimbolos(programa);
-   verificarTiposDoPrograma(programa);
+   bool sucesso = true;
+   sucesso = criarTabelaDeSimbolos(programa);
+   if (sucesso) {
+       sucesso = verificarTiposDoPrograma(programa);
+   }
+   if (sucesso) {
+       gerarAssembly(programa);
+   }
    return 0;
 }
 

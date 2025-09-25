@@ -3,6 +3,7 @@
 
 #include "lista.h"
 #include "mapa.h"
+#include <stdbool.h>
 
 #define TIPO_PRIMITIVO_INTEGER 0
 #define TIPO_PRIMITIVO_STRING 1
@@ -97,7 +98,7 @@ typedef struct node {
 } ast_node_t;
 
 
-mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int linha);
+mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int *posicaoMemoria, int linha);
 programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos, int linha);
 ast_node_t* criarNoReal(double valor, int linha);
 ast_node_t* criarNoInteger(int valor, int linha);
@@ -112,8 +113,9 @@ ast_node_t* criarNoForTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* co
 ast_node_t* criarNoForDownTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo, int linha);
 ast_node_t* criarNoASM(char* asmStr, int linha);
 ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo, int linha);
-void criarTabelaDeSimbolos(programa_t *programa);
-void verificarTiposDoPrograma(programa_t *programa);
+bool criarTabelaDeSimbolos(programa_t *programa);
+bool verificarTiposDoPrograma(programa_t *programa);
+char* gerarAssembly(programa_t *programa);
 
 void printAST(programa_t* programa);
 
