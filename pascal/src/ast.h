@@ -11,6 +11,23 @@
 #define TIPO_PRIMITIVO_REAL 4
 #define TIPO_PRIMITIVO_NAO_PREENCHIDO -1
 
+#define COMPRIMENTO_INTEGER_NA_MEMORIA 4
+#define COMPRIMENTO_STRING_NA_MEMORIA 32
+#define COMPRIMENTO_CHAR_NA_MEMORIA 1
+#define COMPRIMENTO_BOOLEAN_NA_MEMORIA 1
+#define COMPRIMENTO_REAL_NA_MEMORIA 8
+
+// Memória usada para o compilador armazenar seus dados auxiliares
+// É como se fossem 1024 registradores de um byte livres para o compilador fazer o que quiser
+#define INICIO_MEMORIA_AUXILIAR 0
+#define FIM_MEMORIA_AUXILIAR 1023
+// Memória disponível para o programa
+#define INICIO_MEMORIA_DISPONIVEL 1024
+#define FIM_MEMORIA_DISPONIVEL 4998974
+// Memória usada para se comunicar com as extensões da Máquina virtual
+#define INICIO_MEMORIA_EXTENSAO 4998975
+#define FIM_MEMORIA_EXTENSAO 4999999
+
 typedef union {
 	int iVal;
 	char* strVal;
@@ -66,6 +83,8 @@ typedef union {
 typedef struct variavel {
     char* nome;
     int tipo;
+    int comprimentoNaMemoria;
+    int posicaoNaMemoria;
     valor_primitivo valor;
 } variavel_t;
 

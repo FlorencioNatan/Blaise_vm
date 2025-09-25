@@ -5,7 +5,7 @@
 
 void verificarTiposDosStatements(programa_t *programa, lista_t *statements);
 
-mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int linha) {
+mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int *posicaoMemoria, int linha) {
 	while (variaveis != NULL) {
 		if (variaveis->tipo != TC_STRING) {
 			variaveis = caudaDaLista(variaveis);
@@ -26,21 +26,29 @@ mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, m
 		switch (tipo) {
 			case TIPO_PRIMITIVO_INTEGER:
 				variavel->valor.iVal = 0;
+				variavel->comprimentoNaMemoria = COMPRIMENTO_INTEGER_NA_MEMORIA;
 				break;
 			case TIPO_PRIMITIVO_STRING:
 				variavel->valor.strVal = malloc(sizeof(char));
 				variavel->valor.strVal = "";
+				variavel->comprimentoNaMemoria = COMPRIMENTO_STRING_NA_MEMORIA;
 				break;
 			case TIPO_PRIMITIVO_CHAR:
 				variavel->valor.chVal = ' ';
+				variavel->comprimentoNaMemoria = COMPRIMENTO_CHAR_NA_MEMORIA;
 				break;
 			case TIPO_PRIMITIVO_BOOLEAN:
 				variavel->valor.boolVal = true;
+				variavel->comprimentoNaMemoria = COMPRIMENTO_BOOLEAN_NA_MEMORIA;
 				break;
 			case TIPO_PRIMITIVO_REAL:
 				variavel->valor.realVal = 0.0;
+				variavel->comprimentoNaMemoria = COMPRIMENTO_REAL_NA_MEMORIA;
 				break;
 		}
+
+		variavel->posicaoNaMemoria = *posicaoMemoria;
+		*posicaoMemoria += variavel->comprimentoNaMemoria;
 
 		tabela_simbolos = addVariavelNoMapa(variavel->nome, variavel, tabela_simbolos);
 		variaveis = caudaDaLista(variaveis);
@@ -193,12 +201,14 @@ void criarTabelaDeSimbolos(programa_t *programa) {
 	}
 
 	lista_t *declaracoes = programa->variaveis;
+	int posicaoMemoria = 0;
 	while (declaracoes != NULL) {
 		ast_node_t* declaracao = declaracoes->valor.astNode;
 		programa->tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos(
 			declaracao->filhos->valor.lista,
 			declaracao->valor.iVal,
 			programa->tabela_simbolos,
+			&posicaoMemoria,
 			declaracao->linha
 		);
 		declaracoes = caudaDaLista(declaracoes);
@@ -338,11 +348,11 @@ void verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
 			verificarTipoDaExpressao(programa, lhsNode);
 		}
-		if (lhsNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
+		if (lhsNode->tipo_dados != TIPO_PRIMITIVO_INTEGER && lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 			imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
 			return;
 		}
-		expressao->tipo_dados = TIPO_PRIMITIVO_BOOLEAN;
+		expressao->tipo_dados = lhsNode->tipo_dados;
 		break;
 		break;
 	default: break;
