@@ -678,3 +678,370 @@ void printAST(programa_t* programa) {
 
   agclose(g);
 }
+
+
+
+typedef struct contadores {
+	int If;
+	int While;
+	int Repeat;
+	int For;
+} contadores_t;
+
+void gerarAssemblyNoAst(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+);
+
+void gerarAssemblyAtribuicao(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *lhs = noAST->filhos;
+	lista_t *rhs = caudaDaLista(noAST->filhos);
+	ast_node_t *lhsNode = lhs->valor.astNode;
+	ast_node_t *rhsNode = rhs->valor.astNode;
+
+	variavel_t* variavel = buscaVariavel(lhsNode->valor.strVal, programa->tabela_simbolos, lhsNode->linha);
+
+	char buffer[256] = "";
+
+	gerarAssemblyNoAst(programa, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	strcpy(buffer, "");
+	sprintf(buffer, "push %d\n", variavel->posicaoNaMemoria);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	switch (variavel->tipo) {
+	case TIPO_PRIMITIVO_INTEGER:
+		strcpy(buffer, "sh\n");
+		break;
+	case TIPO_PRIMITIVO_STRING:
+		strcpy(buffer, "sb\n");
+		break;
+	case TIPO_PRIMITIVO_CHAR:
+		strcpy(buffer, "sb\n");
+		break;
+	case TIPO_PRIMITIVO_BOOLEAN:
+		strcpy(buffer, "sb\n");
+		break;
+	case TIPO_PRIMITIVO_REAL:
+		strcpy(buffer, "sw\n");
+		break;
+	}
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+}
+
+void gerarAssemblyObterValorDaVariavel(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	variavel_t* variavel = buscaVariavel(noAST->valor.strVal, programa->tabela_simbolos, noAST->linha);
+
+	char buffer[256] = "";
+	sprintf(buffer, "push %d\n", variavel->posicaoNaMemoria);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	switch (variavel->tipo) {
+	case TIPO_PRIMITIVO_INTEGER:
+		strcpy(buffer, "lh\n");
+		break;
+	case TIPO_PRIMITIVO_STRING:
+		strcpy(buffer, "lb\n");
+		break;
+	case TIPO_PRIMITIVO_CHAR:
+		strcpy(buffer, "lb\n");
+		break;
+	case TIPO_PRIMITIVO_BOOLEAN:
+		strcpy(buffer, "lb\n");
+		break;
+	case TIPO_PRIMITIVO_REAL:
+		strcpy(buffer, "lw\n");
+		break;
+	}
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+}
+
+void gerarAssemblySoma(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *lhs = noAST->filhos;
+	lista_t *rhs = caudaDaLista(noAST->filhos);
+	ast_node_t *lhsNode = lhs->valor.astNode;
+	ast_node_t *rhsNode = rhs->valor.astNode;
+
+	gerarAssemblyNoAst(programa, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyNoAst(programa, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+		strcpy(&assembly[*posicaoAssembly], "add\n");
+		*posicaoAssembly += strlen("add\n");
+	} else {
+		strcpy(&assembly[*posicaoAssembly], "addf\n");
+		*posicaoAssembly += strlen("addf\n");
+	}
+}
+
+void gerarAssemblySubtracao(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *lhs = noAST->filhos;
+	lista_t *rhs = caudaDaLista(noAST->filhos);
+	ast_node_t *lhsNode = lhs->valor.astNode;
+	ast_node_t *rhsNode = rhs->valor.astNode;
+
+	gerarAssemblyNoAst(programa, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyNoAst(programa, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+		strcpy(&assembly[*posicaoAssembly], "sub\n");
+		*posicaoAssembly += strlen("sub\n");
+	} else {
+		strcpy(&assembly[*posicaoAssembly], "subf\n");
+		*posicaoAssembly += strlen("subf\n");
+	}
+}
+
+void gerarAssemblyMultiplicacao(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *lhs = noAST->filhos;
+	lista_t *rhs = caudaDaLista(noAST->filhos);
+	ast_node_t *lhsNode = lhs->valor.astNode;
+	ast_node_t *rhsNode = rhs->valor.astNode;
+
+	gerarAssemblyNoAst(programa, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyNoAst(programa, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+		strcpy(&assembly[*posicaoAssembly], "mul\n");
+		*posicaoAssembly += strlen("mul\n");
+	} else {
+		strcpy(&assembly[*posicaoAssembly], "mulf\n");
+		*posicaoAssembly += strlen("mulf\n");
+	}
+}
+
+void gerarAssemblyDivisao(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *lhs = noAST->filhos;
+	lista_t *rhs = caudaDaLista(noAST->filhos);
+	ast_node_t *lhsNode = lhs->valor.astNode;
+	ast_node_t *rhsNode = rhs->valor.astNode;
+
+	gerarAssemblyNoAst(programa, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyNoAst(programa, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+		strcpy(&assembly[*posicaoAssembly], "div\n");
+		*posicaoAssembly += strlen("div\n");
+	} else {
+		strcpy(&assembly[*posicaoAssembly], "divf\n");
+		*posicaoAssembly += strlen("divf\n");
+	}
+}
+
+void gerarAssemblyNegativacao(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *op = noAST->filhos;
+	ast_node_t *opNode = op->valor.astNode;
+
+	strcpy(&assembly[*posicaoAssembly], "push 0\n");
+	*posicaoAssembly += strlen("push 0\n");
+	gerarAssemblyNoAst(programa, opNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	if (opNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+		strcpy(&assembly[*posicaoAssembly], "sub\n");
+		*posicaoAssembly += strlen("sub\n");
+	} else {
+		strcpy(&assembly[*posicaoAssembly], "subf\n");
+		*posicaoAssembly += strlen("subf\n");
+	}
+}
+
+void gerarAssemblyNoAst(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	char buffer[256] = "";
+	if (noAST == NULL) {
+		return;
+	}
+
+	switch (noAST->tipo) {
+	case TAN_PROGRAMA:
+//		strcpy(&assembly[*posicaoAssembly], "PROGRAMA");
+//		*posicaoAssembly += strlen("PROGRAMA\n");
+		break;
+	case TAN_REAL:
+		sprintf(buffer, "push %f\n", noAST->valor.dVal);
+		strcpy(&assembly[*posicaoAssembly], buffer);
+		*posicaoAssembly += strlen(buffer);
+		break;
+	case TAN_INTEGER:
+		sprintf(buffer, "push %d\n", noAST->valor.iVal);
+		strcpy(&assembly[*posicaoAssembly], buffer);
+		*posicaoAssembly += strlen(buffer);
+		break;
+	case TAN_SOMA:
+		gerarAssemblySoma(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		break;
+	case TAN_SUBTRACAO:
+		gerarAssemblySubtracao(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		break;
+	case TAN_MULTIPLICACAO:
+		gerarAssemblyMultiplicacao(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		break;
+	case TAN_DIVISAO:
+		gerarAssemblyDivisao(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		break;
+	case TAN_NEGATIVACAO:
+		gerarAssemblyNegativacao(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		break;
+	case TAN_IGUAL:
+		strcpy(&assembly[*posicaoAssembly], "IGUAL\n");
+		*posicaoAssembly += strlen("IGUAL\n");
+		break;
+	case TAN_DIFERENTE:
+		strcpy(&assembly[*posicaoAssembly], "DIFERENTE\n");
+		*posicaoAssembly += strlen("DIFERENTE\n");
+		break;
+	case TAN_MAIOR:
+		strcpy(&assembly[*posicaoAssembly], "MAIOR\n");
+		*posicaoAssembly += strlen("MAIOR\n");
+		break;
+	case TAN_MAIOR_IGUAL:
+		strcpy(&assembly[*posicaoAssembly], "MAIOR OU IGUAL\n");
+		*posicaoAssembly += strlen("MAIOR OU IGUAL\n");
+		break;
+	case TAN_MENOR:
+		strcpy(&assembly[*posicaoAssembly], "MENOR\n");
+		*posicaoAssembly += strlen("MENOR\n");
+		break;
+	case TAN_MENOR_IGUAL:
+		strcpy(&assembly[*posicaoAssembly], "MENOR OU IGUAL\n");
+		*posicaoAssembly += strlen("MENOR OU IGUAL\n");
+		break;
+	case TAN_AND:
+		strcpy(&assembly[*posicaoAssembly], "AND\n");
+		*posicaoAssembly += strlen("AND\n");
+		break;
+	case TAN_OR:
+		strcpy(&assembly[*posicaoAssembly], "OR\n");
+		*posicaoAssembly += strlen("OR\n");
+		break;
+	case TAN_NOT:
+		strcpy(&assembly[*posicaoAssembly], "NOT\n");
+		*posicaoAssembly += strlen("NOT\n");
+		break;
+	case TAN_VARIAVEL:
+		gerarAssemblyObterValorDaVariavel(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		break;
+	case TAN_ATRIBUICAO:
+		gerarAssemblyAtribuicao(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		break;
+	case TAN_IF:
+		strcpy(&assembly[*posicaoAssembly], "IF\n");
+		*posicaoAssembly += strlen("IF\n");
+		break;
+	case TAN_WHILE:
+		strcpy(&assembly[*posicaoAssembly], "WHILE\n");
+		*posicaoAssembly += strlen("WHILE\n");
+		break;
+	case TAN_REPEAT:
+		strcpy(&assembly[*posicaoAssembly], "REPEAT\n");
+		*posicaoAssembly += strlen("REPEAT\n");
+		break;
+	case TAN_FORTO:
+		strcpy(&assembly[*posicaoAssembly], "FORTO\n");
+		*posicaoAssembly += strlen("FORTO\n");
+		break;
+	case TAN_FORDOWNTO:
+		strcpy(&assembly[*posicaoAssembly], "FORDOWNTO\n");
+		*posicaoAssembly += strlen("FORDOWNTO\n");
+		break;
+	case TAN_ASM:
+		sprintf(&assembly[*posicaoAssembly], "ASM\n");
+		*posicaoAssembly += strlen("ASM\n");
+		break;
+	case TAN_DECLARACAO_VAR:
+		break;
+	}
+}
+
+char* gerarAssembly(programa_t *programa) {
+	if (programa == NULL) {
+		return NULL;
+	}
+
+	char *assembly;
+	int comprimentoAssembly = 1024;
+	int posicaoAssembly = 0;
+	lista_t* filhos = programa->filhos;
+	contadores_t *contadores = malloc(sizeof(contadores_t));
+
+	contadores->For = 0;
+	contadores->If = 0;
+	contadores->Repeat = 0;
+	contadores->While = 0;
+
+	assembly = malloc(sizeof(char) * comprimentoAssembly);
+	sprintf(assembly, "# Programa: %s\n.code\n", programa->nome);
+	posicaoAssembly += strlen(assembly);
+
+	while (filhos != NULL) {
+		ast_node_t* valor = filhos->valor.astNode;
+		gerarAssemblyNoAst(programa, valor, assembly, &posicaoAssembly, &comprimentoAssembly, contadores);
+		filhos = caudaDaLista(filhos);
+	}
+
+	printf("Assembly do programa:\n\n\n\n%s", assembly);
+	return assembly;
+}
