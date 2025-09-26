@@ -686,6 +686,7 @@ typedef struct contadores {
 	int While;
 	int Repeat;
 	int For;
+	int comparacao;
 } contadores_t;
 
 void gerarAssemblyNoAst(
@@ -902,6 +903,47 @@ void gerarAssemblyNegativacao(
 	}
 }
 
+void gerarAssemblyIgual(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *lhs = noAST->filhos;
+	lista_t *rhs = caudaDaLista(noAST->filhos);
+	ast_node_t *lhsNode = lhs->valor.astNode;
+	ast_node_t *rhsNode = rhs->valor.astNode;
+
+	gerarAssemblyNoAst(programa, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyNoAst(programa, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+		strcpy(&assembly[*posicaoAssembly], "    sub\n");
+		*posicaoAssembly += strlen("    sub\n");
+	} else {
+		strcpy(&assembly[*posicaoAssembly], "    subf\n");
+		*posicaoAssembly += strlen("    subf\n");
+	}
+
+	char buffer[256] = "";
+	sprintf(
+		buffer,
+		"    beqi igual_%d\n    push %d\n    jumpi fim_igual_%d\nigual_%d:\n    push %d\nfim_igual_%d:\n",
+		contadores->comparacao,
+		CONST_BOOLEAN_FALSE,
+		contadores->comparacao,
+		contadores->comparacao,
+		CONST_BOOLEAN_TRUE,
+		contadores->comparacao
+	);
+
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	contadores->comparacao++;
+}
+
 void gerarAssemblyNoAst(
 	programa_t* programa,
 	ast_node_t* noAST,
@@ -946,8 +988,7 @@ void gerarAssemblyNoAst(
 		gerarAssemblyNegativacao(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_IGUAL:
-		strcpy(&assembly[*posicaoAssembly], "IGUAL\n");
-		*posicaoAssembly += strlen("IGUAL\n");
+		gerarAssemblyIgual(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_DIFERENTE:
 		strcpy(&assembly[*posicaoAssembly], "DIFERENTE\n");
@@ -1031,6 +1072,7 @@ char* gerarAssembly(programa_t *programa) {
 	contadores->If = 0;
 	contadores->Repeat = 0;
 	contadores->While = 0;
+	contadores->comparacao = 0;
 
 	assembly = malloc(sizeof(char) * comprimentoAssembly);
 	sprintf(assembly, "# Programa: %s\n.code\n", programa->nome);
