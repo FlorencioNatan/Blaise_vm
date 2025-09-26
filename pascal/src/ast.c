@@ -687,6 +687,7 @@ typedef struct contadores {
 	int Repeat;
 	int For;
 	int comparacao;
+	int logico;
 } contadores_t;
 
 void gerarAssemblyNoAst(
@@ -1149,6 +1150,48 @@ void gerarAssemblyMenorIgual(
 	contadores->comparacao++;
 }
 
+void gerarAssemblyAND(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *lhs = noAST->filhos;
+	lista_t *rhs = caudaDaLista(noAST->filhos);
+	ast_node_t *lhsNode = lhs->valor.astNode;
+	ast_node_t *rhsNode = rhs->valor.astNode;
+
+	gerarAssemblyNoAst(programa, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	char buffer[256] = "";
+	sprintf(
+		buffer,
+		"    beqi falso_and_%d\n",
+		contadores->logico
+	);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	strcpy(buffer,"");
+
+	gerarAssemblyNoAst(programa, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	sprintf(
+		buffer,
+		"    beqi falso_and_%d\n    push %d\n    jumpi fim_and_%d\nfalso_and_%d:\n    push %d\nfim_and_%d:\n",
+		contadores->logico,
+		CONST_BOOLEAN_TRUE,
+		contadores->logico,
+		contadores->logico,
+		CONST_BOOLEAN_FALSE,
+		contadores->logico
+	);
+
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	contadores->comparacao++;
+}
+
 void gerarAssemblyNoAst(
 	programa_t* programa,
 	ast_node_t* noAST,
@@ -1211,8 +1254,7 @@ void gerarAssemblyNoAst(
 		gerarAssemblyMenorIgual(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_AND:
-		strcpy(&assembly[*posicaoAssembly], "AND\n");
-		*posicaoAssembly += strlen("AND\n");
+		gerarAssemblyAND(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_OR:
 		strcpy(&assembly[*posicaoAssembly], "OR\n");
@@ -1273,6 +1315,7 @@ char* gerarAssembly(programa_t *programa) {
 	contadores->Repeat = 0;
 	contadores->While = 0;
 	contadores->comparacao = 0;
+	contadores->logico = 0;
 
 	assembly = malloc(sizeof(char) * comprimentoAssembly);
 	sprintf(assembly, "# Programa: %s\n.code\n", programa->nome);
