@@ -1026,6 +1026,47 @@ void gerarAssemblyMaior(
 	contadores->comparacao++;
 }
 
+void gerarAssemblyMaiorIgual(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *lhs = noAST->filhos;
+	lista_t *rhs = caudaDaLista(noAST->filhos);
+	ast_node_t *lhsNode = lhs->valor.astNode;
+	ast_node_t *rhsNode = rhs->valor.astNode;
+
+	gerarAssemblyNoAst(programa, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyNoAst(programa, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+		strcpy(&assembly[*posicaoAssembly], "    sub\n");
+		*posicaoAssembly += strlen("    sub\n");
+	} else {
+		strcpy(&assembly[*posicaoAssembly], "    subf\n");
+		*posicaoAssembly += strlen("    subf\n");
+	}
+
+	char buffer[256] = "";
+	sprintf(
+		buffer,
+		"    bgezi maior_igual_%d\n    push %d\n    jumpi fim_maior_igual_%d\nmaior_igual_%d:\n    push %d\nfim_maior_igual_%d:\n",
+		contadores->comparacao,
+		CONST_BOOLEAN_FALSE,
+		contadores->comparacao,
+		contadores->comparacao,
+		CONST_BOOLEAN_TRUE,
+		contadores->comparacao
+	);
+
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	contadores->comparacao++;
+}
+
 void gerarAssemblyNoAst(
 	programa_t* programa,
 	ast_node_t* noAST,
@@ -1079,8 +1120,7 @@ void gerarAssemblyNoAst(
 		gerarAssemblyMaior(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_MAIOR_IGUAL:
-		strcpy(&assembly[*posicaoAssembly], "MAIOR OU IGUAL\n");
-		*posicaoAssembly += strlen("MAIOR OU IGUAL\n");
+		gerarAssemblyMaiorIgual(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_MENOR:
 		strcpy(&assembly[*posicaoAssembly], "MENOR\n");
