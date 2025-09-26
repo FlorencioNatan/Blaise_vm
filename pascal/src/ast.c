@@ -1279,8 +1279,6 @@ void gerarAssemblyNoAst(
 
 	switch (noAST->tipo) {
 	case TAN_PROGRAMA:
-//		strcpy(&assembly[*posicaoAssembly], "PROGRAMA");
-//		*posicaoAssembly += strlen("PROGRAMA\n");
 		break;
 	case TAN_REAL:
 		sprintf(buffer, "    push %f\n", noAST->valor.dVal);
