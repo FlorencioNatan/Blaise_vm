@@ -1234,6 +1234,36 @@ void gerarAssemblyOR(
 	contadores->comparacao++;
 }
 
+void gerarAssemblyNOT(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *lhs = noAST->filhos;
+	ast_node_t *opNode = lhs->valor.astNode;
+
+	gerarAssemblyNoAst(programa, opNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	char buffer[256] = "";
+	sprintf(
+		buffer,
+		"    bnei false_not_%d\n    push %d\n    jumpi fim_not_%d\nfalse_not_%d:\n    push %d\nfim_not_%d:\n",
+		contadores->logico,
+		CONST_BOOLEAN_TRUE,
+		contadores->logico,
+		contadores->logico,
+		CONST_BOOLEAN_FALSE,
+		contadores->logico
+	);
+
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	contadores->comparacao++;
+}
+
 void gerarAssemblyNoAst(
 	programa_t* programa,
 	ast_node_t* noAST,
@@ -1302,8 +1332,7 @@ void gerarAssemblyNoAst(
 		gerarAssemblyOR(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_NOT:
-		strcpy(&assembly[*posicaoAssembly], "NOT\n");
-		*posicaoAssembly += strlen("NOT\n");
+		gerarAssemblyNOT(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_VARIAVEL:
 		gerarAssemblyObterValorDaVariavel(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
