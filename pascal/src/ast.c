@@ -1460,6 +1460,8 @@ char* gerarAssembly(programa_t *programa) {
 		gerarAssemblyNoAst(programa, valor, assembly, &posicaoAssembly, &comprimentoAssembly, contadores);
 		filhos = caudaDaLista(filhos);
 	}
+	strcpy(&assembly[posicaoAssembly], "    halt\n");
+	posicaoAssembly += strlen("    halt\n");
 
 	printf("Assembly do programa:\n\n\n\n%s", assembly);
 	return assembly;
