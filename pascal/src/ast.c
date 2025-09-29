@@ -757,9 +757,7 @@ void gerarAssemblyObterValorDaVariavel(
 	programa_t* programa,
 	ast_node_t* noAST,
 	char *assembly,
-	int *posicaoAssembly,
-	int *comprimentoAssembly,
-	contadores_t *contadores
+	int *posicaoAssembly
 ) {
 	variavel_t* variavel = buscaVariavel(noAST->valor.strVal, programa->tabela_simbolos, noAST->linha);
 
@@ -1487,6 +1485,15 @@ void gerarAssemblyForDownTo(
 	contadores->For++;
 }
 
+void gerarAssemblyAsm(
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly
+) {
+	strcpy(&assembly[*posicaoAssembly], noAST->valor.strVal);
+	*posicaoAssembly += strlen(noAST->valor.strVal);
+}
+
 void gerarAssemblyNoAst(
 	programa_t* programa,
 	ast_node_t* noAST,
@@ -1556,7 +1563,7 @@ void gerarAssemblyNoAst(
 		gerarAssemblyNOT(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_VARIAVEL:
-		gerarAssemblyObterValorDaVariavel(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		gerarAssemblyObterValorDaVariavel(programa, noAST, assembly, posicaoAssembly);
 		break;
 	case TAN_ATRIBUICAO:
 		gerarAssemblyAtribuicao(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
@@ -1577,8 +1584,7 @@ void gerarAssemblyNoAst(
 		gerarAssemblyForDownTo(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_ASM:
-		sprintf(&assembly[*posicaoAssembly], "ASM\n");
-		*posicaoAssembly += strlen("ASM\n");
+		gerarAssemblyAsm(noAST, assembly, posicaoAssembly);
 		break;
 	case TAN_DECLARACAO_VAR:
 		break;
