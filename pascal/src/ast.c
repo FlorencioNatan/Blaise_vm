@@ -699,6 +699,15 @@ void gerarAssemblyNoAst(
 	contadores_t *contadores
 );
 
+void gerarAssemblyListaNoAst(
+	programa_t* programa,
+	lista_t* listaNo,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+);
+
 void gerarAssemblyAtribuicao(
 	programa_t* programa,
 	ast_node_t* noAST,
@@ -1264,6 +1273,48 @@ void gerarAssemblyNOT(
 	contadores->comparacao++;
 }
 
+void gerarAssemblyIf(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *condicao = noAST->filhos;
+	lista_t *then_stmt = caudaDaLista(noAST->filhos);
+	lista_t *else_stmt = caudaDaLista(then_stmt);
+	ast_node_t *condicaoNode = condicao->valor.astNode;
+	lista_t *then_stmtLista = then_stmt->valor.lista;
+	lista_t *else_stmtLista = else_stmt != NULL ? else_stmt->valor.lista : NULL;
+
+	char buffer[256] = "";
+
+	sprintf(buffer, "# Começo do if %d\n", contadores->If);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	gerarAssemblyNoAst(programa, condicaoNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	strcpy(buffer, "");
+	sprintf(buffer, "    bnei else_if_%d\nthan_if_%d:\n", contadores->If, contadores->If);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	gerarAssemblyListaNoAst(programa, then_stmtLista, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	strcpy(buffer, "");
+	sprintf(buffer, "else_if_%d:\n", contadores->If);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	if (else_stmtLista != NULL) {
+		gerarAssemblyListaNoAst(programa, else_stmtLista, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	}
+	strcpy(buffer, "");
+	sprintf(buffer, "fim_if_%d:\n", contadores->If);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	contadores->If++;
+}
+
 void gerarAssemblyNoAst(
 	programa_t* programa,
 	ast_node_t* noAST,
@@ -1339,8 +1390,7 @@ void gerarAssemblyNoAst(
 		gerarAssemblyAtribuicao(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_IF:
-		strcpy(&assembly[*posicaoAssembly], "IF\n");
-		*posicaoAssembly += strlen("IF\n");
+		gerarAssemblyIf(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_WHILE:
 		strcpy(&assembly[*posicaoAssembly], "WHILE\n");
@@ -1364,6 +1414,22 @@ void gerarAssemblyNoAst(
 		break;
 	case TAN_DECLARACAO_VAR:
 		break;
+	}
+}
+
+void gerarAssemblyListaNoAst(
+	programa_t* programa,
+	lista_t* listaNo,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t* filhos = listaNo;
+	while (filhos != NULL) {
+		ast_node_t* valor = filhos->valor.astNode;
+		gerarAssemblyNoAst(programa, valor, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		filhos = caudaDaLista(filhos);
 	}
 }
 
