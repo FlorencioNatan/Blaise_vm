@@ -1315,6 +1315,72 @@ void gerarAssemblyIf(
 	contadores->If++;
 }
 
+void gerarAssemblyWhile(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *condicao = noAST->filhos;
+	lista_t *codigo = caudaDaLista(noAST->filhos);
+
+	ast_node_t *condicaoNode = condicao->valor.astNode;
+	lista_t *codigoLista = codigo->valor.lista;
+
+	char buffer[256] = "";
+
+	sprintf(buffer, "inicio_while_%d:\n", contadores->While);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	gerarAssemblyNoAst(programa, condicaoNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	strcpy(buffer, "");
+	sprintf(buffer, "    beqi fim_while_%d\n", contadores->While);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	gerarAssemblyListaNoAst(programa, codigoLista, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+
+	strcpy(buffer, "");
+	sprintf(buffer, "    jumpi inicio_while_%d\nfim_while_%d:\n", contadores->While, contadores->While);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	contadores->While++;
+}
+
+void gerarAssemblyRepeat(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *condicao = noAST->filhos;
+	lista_t *codigo = caudaDaLista(noAST->filhos);
+
+	ast_node_t *condicaoNode = condicao->valor.astNode;
+	lista_t *codigoLista = codigo->valor.lista;
+
+	char buffer[256] = "";
+
+	sprintf(buffer, "inicio_repeat_%d:\n", contadores->Repeat);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	gerarAssemblyListaNoAst(programa, codigoLista, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	gerarAssemblyNoAst(programa, condicaoNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	strcpy(buffer, "");
+	sprintf(buffer, "    bnei fim_repeat_%d\n    jumpi inicio_repeat_%d\n\nfim_repeat_%d:\n", contadores->Repeat, contadores->Repeat, contadores->Repeat);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	contadores->Repeat++;
+}
+
 void gerarAssemblyNoAst(
 	programa_t* programa,
 	ast_node_t* noAST,
@@ -1393,12 +1459,10 @@ void gerarAssemblyNoAst(
 		gerarAssemblyIf(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_WHILE:
-		strcpy(&assembly[*posicaoAssembly], "WHILE\n");
-		*posicaoAssembly += strlen("WHILE\n");
+		gerarAssemblyWhile(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_REPEAT:
-		strcpy(&assembly[*posicaoAssembly], "REPEAT\n");
-		*posicaoAssembly += strlen("REPEAT\n");
+		gerarAssemblyRepeat(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_FORTO:
 		strcpy(&assembly[*posicaoAssembly], "FORTO\n");
