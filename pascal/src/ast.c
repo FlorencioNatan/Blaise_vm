@@ -1296,7 +1296,7 @@ void gerarAssemblyIf(
 	gerarAssemblyNoAst(programa, condicaoNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
 	strcpy(buffer, "");
-	sprintf(buffer, "    bnei else_if_%d\nthan_if_%d:\n", contadores->If, contadores->If);
+	sprintf(buffer, "    beqi else_if_%d\nthan_if_%d:\n", contadores->If, contadores->If);
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 	gerarAssemblyListaNoAst(programa, then_stmtLista, assembly, posicaoAssembly, comprimentoAssembly, contadores);
