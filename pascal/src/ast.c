@@ -1381,6 +1381,112 @@ void gerarAssemblyRepeat(
 	contadores->Repeat++;
 }
 
+void gerarAssemblyForTo(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *inicializacao = noAST->filhos;
+	lista_t *ate = caudaDaLista(inicializacao);
+	lista_t *codigo = caudaDaLista(ate);
+
+	ast_node_t *inicializacaoNode = inicializacao->valor.astNode;
+	ast_node_t *ateNode = ate->valor.astNode;
+	ast_node_t *varNode = inicializacaoNode->filhos->valor.astNode;
+
+	variavel_t* variavel = buscaVariavel(varNode->valor.strVal, programa->tabela_simbolos, varNode->linha);
+
+	lista_t *codigoLista = codigo->valor.lista;
+
+	char buffer[256] = "";
+
+	gerarAssemblyNoAst(programa, inicializacaoNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	sprintf(buffer, "inicio_for_%d:\n", contadores->For);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+
+	strcpy(buffer, "");
+	sprintf(buffer, "    push %d\n    lh\n", variavel->posicaoNaMemoria);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	gerarAssemblyNoAst(programa, ateNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	strcpy(buffer, "");
+	sprintf(buffer, "    sub\n    beqi fim_for_%d\n", contadores->For);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	gerarAssemblyListaNoAst(programa, codigoLista, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	strcpy(buffer, "");
+	sprintf(buffer, "    push %d\n    lh\n    push 1\n    add\n    push %d\n    sh\n", variavel->posicaoNaMemoria, variavel->posicaoNaMemoria);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	strcpy(buffer, "");
+	sprintf(buffer, "    jumpi inicio_for_%d\nfim_for_%d:\n", contadores->For, contadores->For);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	contadores->For++;
+}
+
+void gerarAssemblyForDownTo(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	lista_t *inicializacao = noAST->filhos;
+	lista_t *ate = caudaDaLista(inicializacao);
+	lista_t *codigo = caudaDaLista(ate);
+
+	ast_node_t *inicializacaoNode = inicializacao->valor.astNode;
+	ast_node_t *ateNode = ate->valor.astNode;
+	ast_node_t *varNode = inicializacaoNode->filhos->valor.astNode;
+
+	variavel_t* variavel = buscaVariavel(varNode->valor.strVal, programa->tabela_simbolos, varNode->linha);
+
+	lista_t *codigoLista = codigo->valor.lista;
+
+	char buffer[256] = "";
+
+	gerarAssemblyNoAst(programa, inicializacaoNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	sprintf(buffer, "inicio_for_%d:\n", contadores->For);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+
+	strcpy(buffer, "");
+	sprintf(buffer, "    push %d\n    lh\n", variavel->posicaoNaMemoria);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	gerarAssemblyNoAst(programa, ateNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	strcpy(buffer, "");
+	sprintf(buffer, "    sub\n    beqi fim_for_%d\n", contadores->For);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	gerarAssemblyListaNoAst(programa, codigoLista, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	strcpy(buffer, "");
+	sprintf(buffer, "    push %d\n    lh\n    push 1\n    sub\n    push %d\n    sh\n", variavel->posicaoNaMemoria, variavel->posicaoNaMemoria);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	strcpy(buffer, "");
+	sprintf(buffer, "    jumpi inicio_for_%d\nfim_for_%d:\n", contadores->For, contadores->For);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	contadores->For++;
+}
+
 void gerarAssemblyNoAst(
 	programa_t* programa,
 	ast_node_t* noAST,
@@ -1465,12 +1571,10 @@ void gerarAssemblyNoAst(
 		gerarAssemblyRepeat(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_FORTO:
-		strcpy(&assembly[*posicaoAssembly], "FORTO\n");
-		*posicaoAssembly += strlen("FORTO\n");
+		gerarAssemblyForTo(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_FORDOWNTO:
-		strcpy(&assembly[*posicaoAssembly], "FORDOWNTO\n");
-		*posicaoAssembly += strlen("FORDOWNTO\n");
+		gerarAssemblyForDownTo(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_ASM:
 		sprintf(&assembly[*posicaoAssembly], "ASM\n");
