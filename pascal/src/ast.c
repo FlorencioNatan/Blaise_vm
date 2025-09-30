@@ -1486,12 +1486,47 @@ void gerarAssemblyForDownTo(
 }
 
 void gerarAssemblyAsm(
+	programa_t *programa,
 	ast_node_t* noAST,
 	char *assembly,
 	int *posicaoAssembly
 ) {
-	strcpy(&assembly[*posicaoAssembly], noAST->valor.strVal);
+	int tamanhoAssembly = strlen(noAST->valor.strVal);
+	char *noASRStr = noAST->valor.strVal;
+	char *buffer = malloc(sizeof(char) * tamanhoAssembly * 2);
+
+	for (int i = 0, bI = 0; i < tamanhoAssembly; i++, bI++) {
+		if (noASRStr[i] == '@') {
+			i++;
+			char varNome[256] = "";
+			int varI = 0;
+			while (
+				(noASRStr[i] >= 0x30 && noASRStr[i] <= 0x39) || // Digito numerico
+				(noASRStr[i] >= 0x41 && noASRStr[i] <= 0x5A) || // Letra maiúscula
+				(noASRStr[i] >= 0x61 && noASRStr[i] <= 0x7A)    // Letra minúscula
+			) {
+				varNome[varI++] = noASRStr[i++];
+			}
+			varNome[varI++] = '\0';
+			i--;
+
+			variavel_t* variavel = buscaVariavel(varNome, programa->tabela_simbolos, noAST->linha);
+			if (variavel == NULL) {
+				return;
+			}
+
+			strcpy(varNome, "");
+			sprintf(varNome, "%d", variavel->posicaoNaMemoria);
+			strcpy(&buffer[bI], varNome);
+			bI += strlen(varNome) - 1;
+			continue;
+		}
+		buffer[bI] = noASRStr[i];
+	}
+
+	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(noAST->valor.strVal);
+	free(buffer);
 }
 
 void gerarAssemblyNoAst(
@@ -1584,7 +1619,7 @@ void gerarAssemblyNoAst(
 		gerarAssemblyForDownTo(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
 	case TAN_ASM:
-		gerarAssemblyAsm(noAST, assembly, posicaoAssembly);
+		gerarAssemblyAsm(programa, noAST, assembly, posicaoAssembly);
 		break;
 	case TAN_DECLARACAO_VAR:
 		break;
