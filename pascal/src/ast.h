@@ -10,6 +10,7 @@
 #define TIPO_PRIMITIVO_CHAR 2
 #define TIPO_PRIMITIVO_BOOLEAN 3
 #define TIPO_PRIMITIVO_REAL 4
+#define TIPO_PRIMITIVO_ARRAY 5
 #define TIPO_PRIMITIVO_NAO_PREENCHIDO -1
 
 #define CONST_BOOLEAN_TRUE 1
@@ -67,6 +68,8 @@ typedef enum {
 	TAN_FORDOWNTO,
 	TAN_ASM,
 	TAN_DECLARACAO_VAR,
+	TAN_TIPO_ARRAY,
+	TAN_ACESSO_ARRAY,
 } tipo_ast_node_t;
 
 typedef struct programa {
@@ -87,8 +90,11 @@ typedef union {
 typedef struct variavel {
     char* nome;
     int tipo;
+    bool eArray;
     int comprimentoNaMemoria;
     int posicaoNaMemoria;
+    int inicioArray;
+    int fimArray;
     valor_primitivo valor;
 } variavel_t;
 
@@ -101,7 +107,8 @@ typedef struct node {
 } ast_node_t;
 
 
-mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int *posicaoMemoria, int linha);
+mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int *posicaoMemoria, int linha);
+mapa_t* adicionaListaVariaveisArrayNaTabelaDeSimbolos(ast_node_t* declaracao, mapa_t *tabela_simbolos, int *posicaoMemoria);
 programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos, int linha);
 ast_node_t* criarNoReal(double valor, int linha);
 ast_node_t* criarNoInteger(int valor, int linha);
@@ -116,6 +123,9 @@ ast_node_t* criarNoForTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* co
 ast_node_t* criarNoForDownTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo, int linha);
 ast_node_t* criarNoASM(char* asmStr, int linha);
 ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo, int linha);
+ast_node_t* criarNoDeclaracaoArrayVar(lista_t* vars, ast_node_t* tipoArray, int linha);
+ast_node_t* criarNoTipoArray(int inicioArray, int fimArray, int tipo, int linha);
+ast_node_t* criarNoAcessoArray(char* nomeVariavel, ast_node_t* indice, int linha);
 bool criarTabelaDeSimbolos(programa_t *programa);
 bool verificarTiposDoPrograma(programa_t *programa);
 char* gerarAssembly(programa_t *programa);

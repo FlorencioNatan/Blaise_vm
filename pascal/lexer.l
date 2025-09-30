@@ -43,6 +43,8 @@ HEX_DIGIT    [0-9a-fA-F]
 (?i:for)                {return KW_FOR;}
 (?i:to)                 {return KW_TO;}
 (?i:downto)             {return KW_DOWNTO;}
+(?i:of)                 {return KW_OF;}
+(?i:array)              {return KW_ARRAY;}
 
 "-"                     {return MENOS;}
 "+"                     {return MAIS;}
@@ -64,6 +66,9 @@ HEX_DIGIT    [0-9a-fA-F]
 ","                     {return VIRGULA;}
 
 ":="                    {return WALRUS;}
+"["                     {return L_COLCH;}
+"]"                     {return R_COLCH;}
+".."                    {return PONTO_PONTO;}
 
 <INITIAL>(?i:asm)       { BEGIN ASSEMBLY; s = buff; }
 <ASSEMBLY>(?i:end)      { BEGIN INITIAL; *s = '\0'; yylval.asmVal = buff; return ASM; }

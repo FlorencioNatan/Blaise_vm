@@ -5,7 +5,7 @@
 
 bool verificarTiposDosStatements(programa_t *programa, lista_t *statements);
 
-mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int *posicaoMemoria, int linha) {
+mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int *posicaoMemoria, int linha) {
 	while (variaveis != NULL) {
 		if (variaveis->tipo != TC_STRING) {
 			variaveis = caudaDaLista(variaveis);
@@ -13,6 +13,9 @@ mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, m
 		}
 
 		variavel_t* variavel = malloc(sizeof(variavel_t));
+		variavel->eArray = false;
+		variavel->inicioArray = 0;
+		variavel->fimArray = 0;
 		variavel->nome = malloc(sizeof(char) * strlen(variaveis->valor.strVal) + 1);
 		strcpy(variavel->nome, variaveis->valor.strVal);
 		variavel->tipo = tipo;
@@ -49,6 +52,76 @@ mapa_t* adicionaListaVariaveisNaTabelaDeSimbolos(lista_t *variaveis, int tipo, m
 
 		variavel->posicaoNaMemoria = *posicaoMemoria;
 		*posicaoMemoria += variavel->comprimentoNaMemoria;
+
+		tabela_simbolos = addVariavelNoMapa(variavel->nome, variavel, tabela_simbolos);
+		variaveis = caudaDaLista(variaveis);
+	}
+
+	return tabela_simbolos;
+}
+
+mapa_t* adicionaListaVariaveisArrayNaTabelaDeSimbolos(ast_node_t* declaracao, mapa_t *tabela_simbolos, int *posicaoMemoria) {
+	lista_t *variaveis = declaracao->filhos->valor.lista;
+	lista_t *tipo_l = caudaDaLista(declaracao->filhos);
+	lista_t *inicioArray_l = caudaDaLista(tipo_l);
+	lista_t *fimArray_l = caudaDaLista(inicioArray_l);
+
+	int linha = declaracao->linha;
+	int tipo = tipo_l->valor.iVal;
+	int inicioArray = inicioArray_l->valor.iVal;
+	int fimArray = fimArray_l->valor.iVal;
+
+	while (variaveis != NULL) {
+		if (variaveis->tipo != TC_STRING) {
+			variaveis = caudaDaLista(variaveis);
+			return NULL;
+		}
+
+		variavel_t* variavel = malloc(sizeof(variavel_t));
+		variavel->eArray = true;
+		variavel->inicioArray = inicioArray;
+		variavel->fimArray = fimArray;
+		variavel->nome = malloc(sizeof(char) * strlen(variaveis->valor.strVal) + 1);
+		strcpy(variavel->nome, variaveis->valor.strVal);
+		variavel->tipo = tipo;
+
+		if (inicioArray >= fimArray) {
+			printf("** Linha %d: Tamanho do array \"%s\" é inválido. A posição inicial do array precisa ser menor do que a posição final\n", linha, variavel->nome);
+			return NULL;
+		}
+
+		if (tabela_simbolos != NULL && contemChaveNoMapa(variavel->nome, tabela_simbolos)) {
+			printf("** Linha %d: A variável \"%s\" já foi declarada anteriormente.\n", linha, variavel->nome);
+			variaveis = caudaDaLista(variaveis);
+			return NULL;
+		}
+
+		switch (tipo) {
+			case TIPO_PRIMITIVO_INTEGER:
+				variavel->valor.iVal = 0;
+				variavel->comprimentoNaMemoria = COMPRIMENTO_INTEGER_NA_MEMORIA;
+				break;
+			case TIPO_PRIMITIVO_STRING:
+				variavel->valor.strVal = malloc(sizeof(char));
+				variavel->valor.strVal = "";
+				variavel->comprimentoNaMemoria = COMPRIMENTO_STRING_NA_MEMORIA;
+				break;
+			case TIPO_PRIMITIVO_CHAR:
+				variavel->valor.chVal = ' ';
+				variavel->comprimentoNaMemoria = COMPRIMENTO_CHAR_NA_MEMORIA;
+				break;
+			case TIPO_PRIMITIVO_BOOLEAN:
+				variavel->valor.boolVal = true;
+				variavel->comprimentoNaMemoria = COMPRIMENTO_BOOLEAN_NA_MEMORIA;
+				break;
+			case TIPO_PRIMITIVO_REAL:
+				variavel->valor.realVal = 0.0;
+				variavel->comprimentoNaMemoria = COMPRIMENTO_REAL_NA_MEMORIA;
+				break;
+		}
+
+		variavel->posicaoNaMemoria = *posicaoMemoria;
+		*posicaoMemoria += variavel->comprimentoNaMemoria * (fimArray - inicioArray + 1);
 
 		tabela_simbolos = addVariavelNoMapa(variavel->nome, variavel, tabela_simbolos);
 		variaveis = caudaDaLista(variaveis);
@@ -196,6 +269,43 @@ ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo, int linha) {
 	return no;
 }
 
+ast_node_t* criarNoDeclaracaoArrayVar(lista_t* vars, ast_node_t *tipoArray, int linha) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_DECLARACAO_VAR;
+
+	int inicioArray = tipoArray->filhos->valor.iVal;
+	int fimArray = caudaDaLista(tipoArray->filhos)->valor.iVal;
+
+	no->filhos = addIntNaLista(fimArray, NULL);
+	no->filhos = addIntNaLista(inicioArray, no->filhos);
+	no->filhos = addIntNaLista(tipoArray->tipo_dados, no->filhos);
+	no->filhos = addListaNaLista(vars, no->filhos);
+	no->valor.iVal = TIPO_PRIMITIVO_ARRAY;
+	no->linha = linha;
+	return no;
+}
+
+ast_node_t* criarNoAcessoArray(char* nomeVariavel, ast_node_t* indice, int linha) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_ACESSO_ARRAY;
+	no->tipo_dados = TIPO_PRIMITIVO_NAO_PREENCHIDO;
+	no->valor.strVal = malloc(sizeof(char) * (strlen(nomeVariavel) + 1));
+	strcpy(no->valor.strVal, nomeVariavel);
+	no->linha = linha;
+	no->filhos = addNoASTNaLista(indice, NULL);
+	return no;
+}
+
+ast_node_t* criarNoTipoArray(int inicioArray, int fimArray, int tipo, int linha) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_TIPO_ARRAY;
+	no->filhos = addIntNaLista(fimArray, NULL);
+	no->filhos = addIntNaLista(inicioArray, no->filhos);
+	no->valor.iVal = tipo;
+	no->linha = linha;
+	return no;
+}
+
 bool criarTabelaDeSimbolos(programa_t *programa) {
 	if (programa == NULL) {
 		return false;
@@ -205,13 +315,21 @@ bool criarTabelaDeSimbolos(programa_t *programa) {
 	int posicaoMemoria = 0;
 	while (declaracoes != NULL) {
 		ast_node_t* declaracao = declaracoes->valor.astNode;
-		programa->tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos(
-			declaracao->filhos->valor.lista,
-			declaracao->valor.iVal,
-			programa->tabela_simbolos,
-			&posicaoMemoria,
-			declaracao->linha
-		);
+		if (declaracao->valor.iVal != TIPO_PRIMITIVO_ARRAY) {
+			programa->tabela_simbolos = adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(
+				declaracao->filhos->valor.lista,
+				declaracao->valor.iVal,
+				programa->tabela_simbolos,
+				&posicaoMemoria,
+				declaracao->linha
+			);
+		} else {
+			programa->tabela_simbolos = adicionaListaVariaveisArrayNaTabelaDeSimbolos(
+				declaracao,
+				programa->tabela_simbolos,
+				&posicaoMemoria
+			);
+		}
 		if (programa->tabela_simbolos == NULL) {
 			return false;
 		}
@@ -261,6 +379,12 @@ bool verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 	variavel_t* variavel;
 	switch (expressao->tipo) {
 	case TAN_VARIAVEL:
+		variavel = buscaVariavel(expressao->valor.strVal, programa->tabela_simbolos, expressao->linha);
+		if (variavel != NULL) {
+			expressao->tipo_dados = variavel->tipo;
+		}
+		break;
+	case TAN_ACESSO_ARRAY:
 		variavel = buscaVariavel(expressao->valor.strVal, programa->tabela_simbolos, expressao->linha);
 		if (variavel != NULL) {
 			expressao->tipo_dados = variavel->tipo;
@@ -620,7 +744,11 @@ void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 	case TAN_ASM:
 		sprintf(descricaoNoAST, "ASM: %s", noAST->valor.strVal);
 		break;
+	case TAN_ACESSO_ARRAY:
+		sprintf(descricaoNoAST, "ARRAY: %s", noAST->valor.strVal);
+		break;
 	case TAN_DECLARACAO_VAR:
+	case TAN_TIPO_ARRAY:
 		break;
 	}
 	Agnode_t *f = agnode(g, descricaoNoAST, 1);
@@ -1530,6 +1658,49 @@ void gerarAssemblyAsm(
 	free(buffer);
 }
 
+/**
+ * Está faltando fazer as validações dos indices em tempo de execução
+ */
+void gerarAssemblyObterValorDoArray(
+	programa_t* programa,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+	variavel_t* variavel = buscaVariavel(noAST->valor.strVal, programa->tabela_simbolos, noAST->linha);
+
+	ast_node_t *indice = noAST->filhos->valor.astNode;
+
+	gerarAssemblyNoAst(programa, indice, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
+	char buffer[256] = "";
+	sprintf(buffer, "    push %d\n    sub\n    push %d\n", variavel->inicioArray, variavel->posicaoNaMemoria);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	switch (variavel->tipo) {
+	case TIPO_PRIMITIVO_INTEGER:
+		strcpy(buffer, "    lh\n");
+		break;
+	case TIPO_PRIMITIVO_STRING:
+		strcpy(buffer, "    lb\n");
+		break;
+	case TIPO_PRIMITIVO_CHAR:
+		strcpy(buffer, "    lb\n");
+		break;
+	case TIPO_PRIMITIVO_BOOLEAN:
+		strcpy(buffer, "    lb\n");
+		break;
+	case TIPO_PRIMITIVO_REAL:
+		strcpy(buffer, "    lw\n");
+		break;
+	}
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+}
+
 void gerarAssemblyNoAst(
 	programa_t* programa,
 	ast_node_t* noAST,
@@ -1631,7 +1802,11 @@ void gerarAssemblyNoAst(
 	case TAN_ASM:
 		gerarAssemblyAsm(programa, noAST, assembly, posicaoAssembly);
 		break;
+	case TAN_ACESSO_ARRAY:
+		gerarAssemblyObterValorDoArray(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		break;
 	case TAN_DECLARACAO_VAR:
+	case TAN_TIPO_ARRAY:
 		break;
 	}
 }

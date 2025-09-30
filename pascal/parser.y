@@ -30,8 +30,8 @@ programa_t* programa;
 %locations
 
 %start init
-%token MULTIPLICACAO DIVISAO MAIS MENOS IGUAL L_PAREN R_PAREN PONTO_E_VIRGULA PONTO DOIS_PONTOS VIRGULA DIFERENCA MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL WALRUS
-%token KW_PROGRAM KW_BEGIN KW_END KW_VAR KW_CHAR KW_BOOLEAN KW_INTEGER KW_REAL KW_STRING    KW_AND KW_OR KW_NOT KW_IF KW_THEN KW_ELSE KW_WHILE KW_DO KW_REPEAT KW_UNTIL KW_FOR KW_TO KW_DOWNTO
+%token MULTIPLICACAO DIVISAO MAIS MENOS IGUAL L_PAREN R_PAREN PONTO_E_VIRGULA PONTO DOIS_PONTOS VIRGULA DIFERENCA MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL WALRUS L_COLCH R_COLCH PONTO_PONTO
+%token KW_PROGRAM KW_BEGIN KW_END KW_VAR KW_CHAR KW_BOOLEAN KW_INTEGER KW_REAL KW_STRING    KW_AND KW_OR KW_NOT KW_IF KW_THEN KW_ELSE KW_WHILE KW_DO KW_REPEAT KW_UNTIL KW_FOR KW_TO KW_DOWNTO KW_ARRAY KW_OF
 %token <rval> REAL
 %token <ival> INTEGER
 %token <identVal> IDENTIFICADOR
@@ -44,11 +44,12 @@ programa_t* programa;
 %type <node> repeat_statment
 %type <node> for_statment
 %type <lista> statements
-%type <tipo> var_tipos
+%type <tipo> var_tipos_primitivos
 %type <lista> var_lista
 %type <node> var_linha_declaracao
 %type <lista> var_linhas_declaracao
 %type <lista> var_declaracao
+%type <node> var_tipos_array
 %left KW_AND KW_OR KW_NOT
 %left IGUAL DIFERENTE MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL
 %left MAIS MENOS
@@ -68,17 +69,22 @@ var_declaracao:	{/* */}
 var_linhas_declaracao:	var_linha_declaracao PONTO_E_VIRGULA              { $$ = addNoASTNaLista($1, NULL); }
 						| var_linhas_declaracao var_linha_declaracao PONTO_E_VIRGULA { $$ = addNoASTNaLista($2, $1); }
 
-var_linha_declaracao:	var_lista DOIS_PONTOS var_tipos { $$ = criarNoDeclaracaoVar($1, $3, yylloc.first_line);/* $$ = $1; tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos($1, $3, tabela_simbolos);*/ }
+var_linha_declaracao:	var_lista DOIS_PONTOS var_tipos_primitivos { $$ = criarNoDeclaracaoVar($1, $3, yylloc.first_line);/* $$ = $1; tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos($1, $3, tabela_simbolos);*/ }
+						| var_lista DOIS_PONTOS var_tipos_array    { $$ = criarNoDeclaracaoArrayVar($1, $3, yylloc.first_line); }
+						;
 
 var_lista:	IDENTIFICADOR { $$ = addStringNaLista($1, NULL); free($1); }
 		| IDENTIFICADOR VIRGULA var_lista { $$ = addStringNaLista($1, $3); free($1); }
 
-var_tipos:	KW_CHAR               { $$ = TIPO_PRIMITIVO_CHAR; }
-			| KW_BOOLEAN          { $$ = TIPO_PRIMITIVO_BOOLEAN; }
-			| KW_INTEGER          { $$ = TIPO_PRIMITIVO_INTEGER; }
-			| KW_REAL             { $$ = TIPO_PRIMITIVO_REAL; }
-			| KW_STRING           { $$ = TIPO_PRIMITIVO_STRING; }
-			;
+var_tipos_primitivos:	KW_CHAR               { $$ = TIPO_PRIMITIVO_CHAR; }
+						| KW_BOOLEAN          { $$ = TIPO_PRIMITIVO_BOOLEAN; }
+						| KW_INTEGER          { $$ = TIPO_PRIMITIVO_INTEGER; }
+						| KW_REAL             { $$ = TIPO_PRIMITIVO_REAL; }
+						| KW_STRING           { $$ = TIPO_PRIMITIVO_STRING; }
+						;
+
+var_tipos_array:	KW_ARRAY L_COLCH INTEGER PONTO_PONTO INTEGER R_COLCH KW_OF var_tipos_primitivos    { $$ = criarNoTipoArray($3, $5, $8, yylloc.first_line); }
+					;
 
 statement: { $$ = NULL; }
             | atribuicao_statement { $$ = $1; }
@@ -110,6 +116,7 @@ for_statment: KW_FOR atribuicao_statement KW_TO exp KW_DO KW_BEGIN statements KW
 exp:		REAL                  { $$ = criarNoReal($1, yylloc.first_line); }
 			| INTEGER             { $$ = criarNoInteger($1, yylloc.first_line); }
 			| IDENTIFICADOR       { $$ = criarNoVariavel($1, yylloc.first_line); free($1); }
+			| IDENTIFICADOR L_COLCH exp R_COLCH       { $$ = criarNoAcessoArray($1, $3, yylloc.first_line); free($1); }
 			| exp MAIS exp        { $$ = criarNoBinario($1, $3, TAN_SOMA, yylloc.first_line); }
 			| exp MENOS exp       { $$ = criarNoBinario($1, $3, TAN_SUBTRACAO, yylloc.first_line); }
 			| exp MULTIPLICACAO exp        { $$ = criarNoBinario($1, $3, TAN_MULTIPLICACAO, yylloc.first_line); }
