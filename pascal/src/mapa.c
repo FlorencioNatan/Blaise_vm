@@ -141,6 +141,12 @@ mapa_t* addNodeNoMapa(no_t *no, mapa_t *mapa) {
 		no->cor = COR_PRETO;
 
 		no_t *nil = malloc(sizeof(no_t));
+		nil->chave = NULL;
+		nil->direita = NULL;
+		nil->esquerda = NULL;
+		nil->pai = NULL;
+		nil->cor = COR_PRETO;
+
 		mapa_t *novo_mapa = malloc(sizeof(mapa_t));
 		no->pai = nil;
 		no->esquerda = nil;

@@ -64,6 +64,7 @@ programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos, int
 	programa->variaveis = variaveis;
 	programa->filhos = filhos;
 	programa->linha = linha;
+	programa->tabela_simbolos = NULL;
 
 	return programa;
 }
@@ -1493,7 +1494,7 @@ void gerarAssemblyAsm(
 ) {
 	int tamanhoAssembly = strlen(noAST->valor.strVal);
 	char *noASRStr = noAST->valor.strVal;
-	char *buffer = malloc(sizeof(char) * tamanhoAssembly * 2);
+	char *buffer = calloc(tamanhoAssembly * 2, sizeof(char));
 
 	for (int i = 0, bI = 0; i < tamanhoAssembly; i++, bI++) {
 		if (noASRStr[i] == '@') {
@@ -1525,7 +1526,7 @@ void gerarAssemblyAsm(
 	}
 
 	strcpy(&assembly[*posicaoAssembly], buffer);
-	*posicaoAssembly += strlen(noAST->valor.strVal);
+	*posicaoAssembly += strlen(buffer);
 	free(buffer);
 }
 
@@ -1537,6 +1538,15 @@ void gerarAssemblyNoAst(
 	int *comprimentoAssembly,
 	contadores_t *contadores
 ) {
+
+	if (*comprimentoAssembly - *posicaoAssembly < 512) {
+		*comprimentoAssembly = 2 * *comprimentoAssembly;
+		char *novoAssembly = malloc(sizeof(char) * *comprimentoAssembly);
+		strcpy(novoAssembly, assembly);
+		free(assembly);
+		assembly = novoAssembly;
+	}
+
 	char buffer[256] = "";
 	if (noAST == NULL) {
 		return;
@@ -1648,7 +1658,7 @@ char* gerarAssembly(programa_t *programa) {
 	}
 
 	char *assembly;
-	int comprimentoAssembly = 1024;
+	int comprimentoAssembly = 5000000;
 	int posicaoAssembly = 0;
 	lista_t* filhos = programa->filhos;
 	contadores_t *contadores = malloc(sizeof(contadores_t));
@@ -1672,6 +1682,7 @@ char* gerarAssembly(programa_t *programa) {
 	strcpy(&assembly[posicaoAssembly], "    halt\n");
 	posicaoAssembly += strlen("    halt\n");
 
-	printf("Assembly do programa:\n\n\n\n%s", assembly);
+	free(contadores);
+
 	return assembly;
 }

@@ -60,7 +60,7 @@ programa_t* programa;
 
 
 %% 
-init:	KW_PROGRAM IDENTIFICADOR PONTO_E_VIRGULA var_declaracao KW_BEGIN statements KW_END PONTO { programa = criarNoPrograma($2, $4, $6, yylloc.first_line); /*printAST(programa); printf("%s", $2);*/ }
+init:	KW_PROGRAM IDENTIFICADOR PONTO_E_VIRGULA var_declaracao KW_BEGIN statements KW_END PONTO { programa = criarNoPrograma($2, $4, $6, yylloc.first_line); free($2); /*printAST(programa); printf("%s", $2);*/ }
 
 var_declaracao:	{/* */}
 					| KW_VAR var_linhas_declaracao { $$ = $2; /* printMapa(tabela_simbolos); */ }
@@ -70,8 +70,8 @@ var_linhas_declaracao:	var_linha_declaracao PONTO_E_VIRGULA              { $$ = 
 
 var_linha_declaracao:	var_lista DOIS_PONTOS var_tipos { $$ = criarNoDeclaracaoVar($1, $3, yylloc.first_line);/* $$ = $1; tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos($1, $3, tabela_simbolos);*/ }
 
-var_lista:	IDENTIFICADOR { $$ = addStringNaLista($1, NULL); }
-		| IDENTIFICADOR VIRGULA var_lista { $$ = addStringNaLista($1, $3); }
+var_lista:	IDENTIFICADOR { $$ = addStringNaLista($1, NULL); free($1); }
+		| IDENTIFICADOR VIRGULA var_lista { $$ = addStringNaLista($1, $3); free($1); }
 
 var_tipos:	KW_CHAR               { $$ = TIPO_PRIMITIVO_CHAR; }
 			| KW_BOOLEAN          { $$ = TIPO_PRIMITIVO_BOOLEAN; }
@@ -93,7 +93,7 @@ statements: statement { $$ = addNoASTNaLista($1, NULL); }
             | statement PONTO_E_VIRGULA statements { $$ = addNoASTNaLista($1, $3); }
             ;
 
-atribuicao_statement: IDENTIFICADOR WALRUS exp { $$ = criarNoAtribuicao($1, $3, yylloc.first_line); };
+atribuicao_statement: IDENTIFICADOR WALRUS exp { $$ = criarNoAtribuicao($1, $3, yylloc.first_line); free($1); };
 
 if_statement: KW_IF exp KW_THEN KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, NULL, yylloc.first_line); }
 			  | KW_IF exp KW_THEN KW_BEGIN statements KW_END KW_ELSE KW_BEGIN statements KW_END { $$ = criarNoIf($2, $5, $9, yylloc.first_line); }
@@ -109,7 +109,7 @@ for_statment: KW_FOR atribuicao_statement KW_TO exp KW_DO KW_BEGIN statements KW
 
 exp:		REAL                  { $$ = criarNoReal($1, yylloc.first_line); }
 			| INTEGER             { $$ = criarNoInteger($1, yylloc.first_line); }
-			| IDENTIFICADOR       { $$ = criarNoVariavel($1, yylloc.first_line); }
+			| IDENTIFICADOR       { $$ = criarNoVariavel($1, yylloc.first_line); free($1); }
 			| exp MAIS exp        { $$ = criarNoBinario($1, $3, TAN_SOMA, yylloc.first_line); }
 			| exp MENOS exp       { $$ = criarNoBinario($1, $3, TAN_SUBTRACAO, yylloc.first_line); }
 			| exp MULTIPLICACAO exp        { $$ = criarNoBinario($1, $3, TAN_MULTIPLICACAO, yylloc.first_line); }
@@ -146,7 +146,9 @@ int main(int argc, char **argv) {
        sucesso = verificarTiposDoPrograma(programa);
    }
    if (sucesso) {
-       gerarAssembly(programa);
+       char* assembly = gerarAssembly(programa);
+       printf("Assembly do programa:\n\n\n\n%s", assembly);
+       free(assembly);
    }
    return 0;
 }
