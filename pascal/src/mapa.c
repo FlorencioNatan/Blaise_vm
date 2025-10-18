@@ -209,6 +209,26 @@ mapa_t* addVariavelNoMapa(char *chave, variavel_t *valor, mapa_t *mapa) {
 	return addNodeNoMapa(novoNo, mapa);
 }
 
+mapa_t* addProcedureNoMapa(char *chave, procedure_t *valor, mapa_t *mapa) {
+	no_t *novoNo = malloc(sizeof(no_t));
+	novoNo->tipo = TC_PROCEDURE;
+	novoNo->chave = malloc(sizeof(char) * (strlen(chave) + 1));
+	novoNo->valor.proVal = valor;
+	strcpy(novoNo->chave, chave);
+
+	return addNodeNoMapa(novoNo, mapa);
+}
+
+mapa_t* addFunctionNoMapa(char *chave, function_t *valor, mapa_t *mapa) {
+	no_t *novoNo = malloc(sizeof(no_t));
+	novoNo->tipo = TC_FUNCTION;
+	novoNo->chave = malloc(sizeof(char) * (strlen(chave) + 1));
+	novoNo->valor.funVal = valor;
+	strcpy(novoNo->chave, chave);
+
+	return addNodeNoMapa(novoNo, mapa);
+}
+
 variavel_t* buscarVariavelNoMapa(char *chave, mapa_t *mapa) {
 	no_t *resutlado = buscarChaveNoMapa(chave, mapa);
 	if (resutlado->tipo != TC_VARIAVEL) {

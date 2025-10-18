@@ -360,11 +360,7 @@ ast_node_t* criarNoExit(ast_node_t* exp, int linha) {
 	return no;
 }
 
-bool criarTabelaDeSimbolos(programa_t *programa) {
-	if (programa == NULL) {
-		return false;
-	}
-
+bool adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(programa_t *programa) {
 	lista_t *declaracoes = programa->variaveis;
 	int posicaoMemoria = 0;
 	while (declaracoes != NULL) {
@@ -389,6 +385,43 @@ bool criarTabelaDeSimbolos(programa_t *programa) {
 		}
 		declaracoes = caudaDaLista(declaracoes);
 	}
+	return true;
+}
+
+bool adicionarDeclaracoesSubrotinasNaTabelaDeSimbolos(programa_t *programa) {
+	lista_t *subrotinas = programa->subrotinas;
+	while (subrotinas != NULL) {
+		ast_node_t* declaracao = subrotinas->valor.astNode;
+
+		if (declaracao->tipo == TAN_PROCEDURE) {
+			procedure_t *procedure = declaracao->valor.proVal;
+			programa->tabela_simbolos = addProcedureNoMapa(procedure->nome, procedure, programa->tabela_simbolos);
+		} else {
+			function_t *function = declaracao->valor.funVal;
+			programa->tabela_simbolos = addFunctionNoMapa(function->nome, function, programa->tabela_simbolos);
+		}
+
+		if (programa->tabela_simbolos == NULL) {
+			return false;
+		}
+		subrotinas = caudaDaLista(subrotinas);
+	}
+	return true;
+}
+
+bool criarTabelaDeSimbolos(programa_t *programa) {
+	if (programa == NULL) {
+		return false;
+	}
+
+	if (!adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(programa)) {
+		return false;
+	}
+
+	if (!adicionarDeclaracoesSubrotinasNaTabelaDeSimbolos(programa)) {
+		return false;
+	}
+
 	return true;
 }
 

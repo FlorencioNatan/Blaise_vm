@@ -28,6 +28,8 @@ struct no {
 mapa_t* addStringNoMapa(char *chave, char *valor, mapa_t *mapa);
 mapa_t* addIntNoMapa(char *chave, int valor, mapa_t *mapa);
 mapa_t* addVariavelNoMapa(char *chave, variavel_t *valor, mapa_t *mapa);
+mapa_t* addProcedureNoMapa(char *chave, procedure_t *valor, mapa_t *mapa);
+mapa_t* addFunctionNoMapa(char *chave, function_t *valor, mapa_t *mapa);
 variavel_t* buscarVariavelNoMapa(char *chave, mapa_t *mapa);
 bool contemChaveNoMapa(char *chave, mapa_t *mapa);
 

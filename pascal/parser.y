@@ -68,7 +68,7 @@ programa_t* programa;
 %% 
 init:	KW_PROGRAM IDENTIFICADOR PONTO_E_VIRGULA subrotinas_declaracoes var_declaracao KW_BEGIN statements KW_END PONTO { programa = criarNoPrograma($2, $4, $5, $7, yylloc.first_line); free($2); /*printAST(programa); printf("%s", $2);*/ }
 
-subrotinas_declaracoes: {/* */}
+subrotinas_declaracoes: { $$ = NULL; }
                         | subrotina_declaracao PONTO_E_VIRGULA subrotinas_declaracoes { $$ = addNoASTNaLista($1, $3); }
                         ;
 
