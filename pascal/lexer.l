@@ -45,6 +45,9 @@ HEX_DIGIT    [0-9a-fA-F]
 (?i:downto)             {return KW_DOWNTO;}
 (?i:of)                 {return KW_OF;}
 (?i:array)              {return KW_ARRAY;}
+(?i:procedure)          {return KW_PROCEDURE;}
+(?i:function)           {return KW_FUNCTION;}
+(?i:exit)               {return KW_EXIT;}
 
 "-"                     {return MENOS;}
 "+"                     {return MAIS;}

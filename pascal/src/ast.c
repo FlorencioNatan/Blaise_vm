@@ -130,16 +130,52 @@ mapa_t* adicionaListaVariaveisArrayNaTabelaDeSimbolos(ast_node_t* declaracao, ma
 	return tabela_simbolos;
 }
 
-programa_t* criarNoPrograma(char* nome, lista_t *variaveis, lista_t *filhos, int linha) {
+programa_t* criarNoPrograma(char* nome, lista_t *subrotinas, lista_t *variaveis, lista_t *filhos, int linha) {
 	programa_t* programa = malloc(sizeof(programa_t));
 	programa->nome = malloc(sizeof(char) * strlen(nome) + 1);
 	strcpy(programa->nome, nome);
+	programa->subrotinas = subrotinas;
 	programa->variaveis = variaveis;
 	programa->filhos = filhos;
 	programa->linha = linha;
 	programa->tabela_simbolos = NULL;
 
 	return programa;
+}
+
+ast_node_t* criarNoProcedure(char* nome, lista_t *parametros, lista_t *variaveis, lista_t *filhos, int linha) {
+	procedure_t* procedure = malloc(sizeof(programa_t));
+	procedure->nome = malloc(sizeof(char) * strlen(nome) + 1);
+	strcpy(procedure->nome, nome);
+	procedure->parametros = parametros;
+	procedure->variaveis = variaveis;
+	procedure->filhos = filhos;
+	procedure->tabela_simbolos = NULL;
+
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_PROCEDURE;
+	no->tipo_dados = TIPO_PRIMITIVO_NAO_PREENCHIDO;
+	no->valor.proVal = procedure;
+	no->linha = linha;
+	return no;
+}
+
+ast_node_t* criarNoFunction(char* nome, lista_t *parametros, lista_t *variaveis, lista_t *filhos, int tipo_retorno, int linha) {
+	function_t* function = malloc(sizeof(programa_t));
+	function->nome = malloc(sizeof(char) * strlen(nome) + 1);
+	strcpy(function->nome, nome);
+	function->parametros = parametros;
+	function->variaveis = variaveis;
+	function->filhos = filhos;
+	function->tabela_simbolos = NULL;
+	function->tipo_retorno = tipo_retorno;
+
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_FUNCTION;
+	no->tipo_dados = tipo_retorno;
+	no->valor.funVal = function;
+	no->linha = linha;
+	return no;
 }
 
 ast_node_t* criarNoReal(double valor, int linha) {
@@ -302,6 +338,24 @@ ast_node_t* criarNoTipoArray(int inicioArray, int fimArray, int tipo, int linha)
 	no->filhos = addIntNaLista(fimArray, NULL);
 	no->filhos = addIntNaLista(inicioArray, no->filhos);
 	no->valor.iVal = tipo;
+	no->linha = linha;
+	return no;
+}
+
+ast_node_t* criarNoChamadaSubrotina(char* nomeVariavel, lista_t* parametros, int linha) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_CHAMADA_SUBROTINA;
+	no->filhos = parametros;
+	no->valor.strVal = malloc(sizeof(char) * (strlen(nomeVariavel) + 1));
+	strcpy(no->valor.strVal, nomeVariavel);
+	no->linha = linha;
+	return no;
+}
+
+ast_node_t* criarNoExit(ast_node_t* exp, int linha) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_EXIT;
+	no->filhos = addNoASTNaLista(exp, NULL);
 	no->linha = linha;
 	return no;
 }
@@ -749,6 +803,16 @@ void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 		break;
 	case TAN_LISTA_VAR:
 	case TAN_TIPO_ARRAY:
+	case TAN_EXIT:
+		break;
+	case TAN_PROCEDURE:
+		sprintf(descricaoNoAST, "Procedure: %s", noAST->valor.proVal->nome);
+		break;
+	case TAN_FUNCTION:
+		sprintf(descricaoNoAST, "Function: %s", noAST->valor.funVal->nome);
+		break;
+	case TAN_CHAMADA_SUBROTINA:
+		sprintf(descricaoNoAST, "Chamada: %s", noAST->valor.strVal);
 		break;
 	}
 	Agnode_t *f = agnode(g, descricaoNoAST, 1);
