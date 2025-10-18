@@ -260,9 +260,9 @@ ast_node_t* criarNoASM(char* asmStr, int linha) {
 	return no;
 }
 
-ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo, int linha) {
+ast_node_t* criarNoListaVar(lista_t* vars, int tipo, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
-	no->tipo = TAN_DECLARACAO_VAR;
+	no->tipo = TAN_LISTA_VAR;
 	no->filhos = addListaNaLista(vars, NULL);
 	no->valor.iVal = tipo;
 	no->linha = linha;
@@ -271,7 +271,7 @@ ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo, int linha) {
 
 ast_node_t* criarNoDeclaracaoArrayVar(lista_t* vars, ast_node_t *tipoArray, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
-	no->tipo = TAN_DECLARACAO_VAR;
+	no->tipo = TAN_LISTA_VAR;
 
 	int inicioArray = tipoArray->filhos->valor.iVal;
 	int fimArray = caudaDaLista(tipoArray->filhos)->valor.iVal;
@@ -747,7 +747,7 @@ void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 	case TAN_ACESSO_ARRAY:
 		sprintf(descricaoNoAST, "ARRAY: %s", noAST->valor.strVal);
 		break;
-	case TAN_DECLARACAO_VAR:
+	case TAN_LISTA_VAR:
 	case TAN_TIPO_ARRAY:
 		break;
 	}
@@ -1805,7 +1805,7 @@ void gerarAssemblyNoAst(
 	case TAN_ACESSO_ARRAY:
 		gerarAssemblyObterValorDoArray(programa, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
-	case TAN_DECLARACAO_VAR:
+	case TAN_LISTA_VAR:
 	case TAN_TIPO_ARRAY:
 		break;
 	}

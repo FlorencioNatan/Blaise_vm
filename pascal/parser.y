@@ -45,9 +45,9 @@ programa_t* programa;
 %type <node> for_statment
 %type <lista> statements
 %type <tipo> var_tipos_primitivos
-%type <lista> var_lista
-%type <node> var_linha_declaracao
-%type <lista> var_linhas_declaracao
+%type <lista> identificador_lista
+%type <node> var_lista
+%type <lista> var_listas
 %type <lista> var_declaracao
 %type <node> var_tipos_array
 %left KW_AND KW_OR KW_NOT
@@ -64,17 +64,17 @@ programa_t* programa;
 init:	KW_PROGRAM IDENTIFICADOR PONTO_E_VIRGULA var_declaracao KW_BEGIN statements KW_END PONTO { programa = criarNoPrograma($2, $4, $6, yylloc.first_line); free($2); /*printAST(programa); printf("%s", $2);*/ }
 
 var_declaracao:	{/* */}
-					| KW_VAR var_linhas_declaracao { $$ = $2; /* printMapa(tabela_simbolos); */ }
+					| KW_VAR var_listas { $$ = $2; /* printMapa(tabela_simbolos); */ }
 
-var_linhas_declaracao:	var_linha_declaracao PONTO_E_VIRGULA              { $$ = addNoASTNaLista($1, NULL); }
-						| var_linhas_declaracao var_linha_declaracao PONTO_E_VIRGULA { $$ = addNoASTNaLista($2, $1); }
+var_listas:	var_lista PONTO_E_VIRGULA              { $$ = addNoASTNaLista($1, NULL); }
+			| var_listas var_lista PONTO_E_VIRGULA { $$ = addNoASTNaLista($2, $1); }
 
-var_linha_declaracao:	var_lista DOIS_PONTOS var_tipos_primitivos { $$ = criarNoDeclaracaoVar($1, $3, yylloc.first_line);/* $$ = $1; tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos($1, $3, tabela_simbolos);*/ }
-						| var_lista DOIS_PONTOS var_tipos_array    { $$ = criarNoDeclaracaoArrayVar($1, $3, yylloc.first_line); }
-						;
+var_lista:	identificador_lista DOIS_PONTOS var_tipos_primitivos { $$ = criarNoDeclaracaoVar($1, $3, yylloc.first_line);/* $$ = $1; tabela_simbolos = adicionaListaVariaveisNaTabelaDeSimbolos($1, $3, tabela_simbolos);*/ }
+			| identificador_lista DOIS_PONTOS var_tipos_array    { $$ = criarNoDeclaracaoArrayVar($1, $3, yylloc.first_line); }
+			;
 
-var_lista:	IDENTIFICADOR { $$ = addStringNaLista($1, NULL); free($1); }
-		| IDENTIFICADOR VIRGULA var_lista { $$ = addStringNaLista($1, $3); free($1); }
+identificador_lista:  IDENTIFICADOR { $$ = addStringNaLista($1, NULL); free($1); }
+                      | IDENTIFICADOR VIRGULA identificador_lista { $$ = addStringNaLista($1, $3); free($1); }
 
 var_tipos_primitivos:	KW_CHAR               { $$ = TIPO_PRIMITIVO_CHAR; }
 						| KW_BOOLEAN          { $$ = TIPO_PRIMITIVO_BOOLEAN; }

@@ -67,7 +67,7 @@ typedef enum {
 	TAN_FORTO,
 	TAN_FORDOWNTO,
 	TAN_ASM,
-	TAN_DECLARACAO_VAR,
+	TAN_LISTA_VAR,
 	TAN_TIPO_ARRAY,
 	TAN_ACESSO_ARRAY,
 } tipo_ast_node_t;
@@ -122,7 +122,7 @@ ast_node_t* criarNoRepeat(ast_node_t* condicao, lista_t* codigo, int linha);
 ast_node_t* criarNoForTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo, int linha);
 ast_node_t* criarNoForDownTo(ast_node_t* inicializacao, ast_node_t* ate, lista_t* codigo, int linha);
 ast_node_t* criarNoASM(char* asmStr, int linha);
-ast_node_t* criarNoDeclaracaoVar(lista_t* vars, int tipo, int linha);
+ast_node_t* criarNoListaVar(lista_t* vars, int tipo, int linha);
 ast_node_t* criarNoDeclaracaoArrayVar(lista_t* vars, ast_node_t* tipoArray, int linha);
 ast_node_t* criarNoTipoArray(int inicioArray, int fimArray, int tipo, int linha);
 ast_node_t* criarNoAcessoArray(char* nomeVariavel, ast_node_t* indice, int linha);
