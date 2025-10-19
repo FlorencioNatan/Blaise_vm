@@ -76,7 +76,7 @@ subrotina_declaracao: KW_PROCEDURE IDENTIFICADOR L_PAREN var_listas R_PAREN PONT
                     | KW_FUNCTION IDENTIFICADOR L_PAREN var_listas R_PAREN DOIS_PONTOS var_tipos_primitivos PONTO_E_VIRGULA var_declaracao KW_BEGIN statements KW_END { $$ = criarNoFunction($2, $4, $9, $11, $7, yylloc.first_line); free($2); }
                     ;
 
-var_declaracao:	{/* */}
+var_declaracao:	{ $$ = NULL; }
 					| KW_VAR var_listas PONTO_E_VIRGULA { $$ = $2; /* printMapa(tabela_simbolos); */ }
 					;
 

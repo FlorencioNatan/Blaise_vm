@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <graphviz/gvc.h>
 
-bool verificarTiposDosStatements(programa_t *programa, lista_t *statements);
+bool verificarTiposDosStatements(mapa_t *tabela_simbolos, lista_t *statements);
 
 mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int *posicaoMemoria, int linha) {
 	while (variaveis != NULL) {
@@ -360,32 +360,31 @@ ast_node_t* criarNoExit(ast_node_t* exp, int linha) {
 	return no;
 }
 
-bool adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(programa_t *programa) {
-	lista_t *declaracoes = programa->variaveis;
+mapa_t * adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(mapa_t *tabela_simbolos, lista_t *declaracoes) {
 	int posicaoMemoria = 0;
 	while (declaracoes != NULL) {
 		ast_node_t* declaracao = declaracoes->valor.astNode;
 		if (declaracao->valor.iVal != TIPO_PRIMITIVO_ARRAY) {
-			programa->tabela_simbolos = adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(
+			tabela_simbolos = adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(
 				declaracao->filhos->valor.lista,
 				declaracao->valor.iVal,
-				programa->tabela_simbolos,
+				tabela_simbolos,
 				&posicaoMemoria,
 				declaracao->linha
 			);
 		} else {
-			programa->tabela_simbolos = adicionaListaVariaveisArrayNaTabelaDeSimbolos(
+			tabela_simbolos = adicionaListaVariaveisArrayNaTabelaDeSimbolos(
 				declaracao,
-				programa->tabela_simbolos,
+				tabela_simbolos,
 				&posicaoMemoria
 			);
 		}
-		if (programa->tabela_simbolos == NULL) {
+		if (tabela_simbolos == NULL) {
 			return false;
 		}
 		declaracoes = caudaDaLista(declaracoes);
 	}
-	return true;
+	return tabela_simbolos;
 }
 
 bool adicionarDeclaracoesSubrotinasNaTabelaDeSimbolos(programa_t *programa) {
@@ -409,16 +408,61 @@ bool adicionarDeclaracoesSubrotinasNaTabelaDeSimbolos(programa_t *programa) {
 	return true;
 }
 
+bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
+	lista_t *subrotinas = programa->subrotinas;
+	while (subrotinas != NULL) {
+		ast_node_t* declaracao = subrotinas->valor.astNode;
+		mapa_t* tabela_simbolos = NULL;
+		lista_t* variaveis = NULL;
+
+		if (declaracao->tipo == TAN_PROCEDURE) {
+			procedure_t *procedure = declaracao->valor.proVal;
+			tabela_simbolos = procedure->tabela_simbolos;
+			variaveis = procedure->parametros;
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
+			variaveis = procedure->variaveis;
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
+			procedure->tabela_simbolos = tabela_simbolos;
+			if (procedure->tabela_simbolos != NULL) {
+				procedure->tabela_simbolos->mapa_pai = programa->tabela_simbolos;
+			}
+		} else {
+			function_t *function = declaracao->valor.funVal;
+			tabela_simbolos = function->tabela_simbolos;
+			variaveis = function->parametros;
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
+			variaveis = function->variaveis;
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
+			function->tabela_simbolos = tabela_simbolos;
+			if (function->tabela_simbolos != NULL) {
+				function->tabela_simbolos->mapa_pai = programa->tabela_simbolos;
+			}
+		}
+
+		if (tabela_simbolos == NULL && variaveis != NULL) {
+			return false;
+		}
+		subrotinas = caudaDaLista(subrotinas);
+	}
+
+	return true;
+}
+
 bool criarTabelaDeSimbolos(programa_t *programa) {
 	if (programa == NULL) {
 		return false;
 	}
 
-	if (!adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(programa)) {
+	programa->tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(programa->tabela_simbolos, programa->variaveis);
+	if (programa->tabela_simbolos == NULL && programa->variaveis != NULL) {
 		return false;
 	}
 
 	if (!adicionarDeclaracoesSubrotinasNaTabelaDeSimbolos(programa)) {
+		return false;
+	}
+
+	if (!adicionarDeclaracoesDeVariaveisDasSubrotinas(programa)) {
 		return false;
 	}
 
@@ -451,6 +495,9 @@ void imprimirMensagemDeErroDeTipo(int linha, int tipoUm, int tipoDois) {
 variavel_t* buscaVariavel(char *chave, mapa_t *mapa, int linha) {
 	variavel_t* variavel;
 	variavel = buscarVariavelNoMapa(chave, mapa);
+	if (variavel == NULL) {
+		variavel = buscarVariavelNoMapa(chave, mapa->mapa_pai);
+	}
 
 	if (variavel == NULL) {
 		printf("** Linha %d: Variável \"%s\" não declarada.\n", linha, chave);
@@ -460,21 +507,25 @@ variavel_t* buscaVariavel(char *chave, mapa_t *mapa, int linha) {
 	return variavel;
 }
 
-bool verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
+bool verificarTipoDaExpressao(mapa_t *tabela_simbolos, ast_node_t* expressao) {
 	ast_node_t *lhsNode = NULL;
 	ast_node_t *rhsNode = NULL;
 	variavel_t* variavel;
 	switch (expressao->tipo) {
 	case TAN_VARIAVEL:
-		variavel = buscaVariavel(expressao->valor.strVal, programa->tabela_simbolos, expressao->linha);
+		variavel = buscaVariavel(expressao->valor.strVal, tabela_simbolos, expressao->linha);
 		if (variavel != NULL) {
 			expressao->tipo_dados = variavel->tipo;
+		} else {
+			return false;
 		}
 		break;
 	case TAN_ACESSO_ARRAY:
-		variavel = buscaVariavel(expressao->valor.strVal, programa->tabela_simbolos, expressao->linha);
+		variavel = buscaVariavel(expressao->valor.strVal, tabela_simbolos, expressao->linha);
 		if (variavel != NULL) {
 			expressao->tipo_dados = variavel->tipo;
+		} else {
+			return false;
 		}
 		break;
 	case TAN_IGUAL:
@@ -486,10 +537,14 @@ bool verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 		lhsNode = expressao->filhos->valor.astNode;
 		rhsNode = caudaDaLista(expressao->filhos)->valor.astNode;
 		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-			verificarTipoDaExpressao(programa, lhsNode);
+			if (!verificarTipoDaExpressao(tabela_simbolos, lhsNode)) {
+				return false;
+			}
 		}
 		if (rhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-			verificarTipoDaExpressao(programa, rhsNode);
+			if (!verificarTipoDaExpressao(tabela_simbolos, rhsNode)) {
+				return false;
+			}
 		}
 		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_REAL && rhsNode ->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
 			expressao->tipo_dados = TIPO_PRIMITIVO_BOOLEAN;
@@ -506,10 +561,14 @@ bool verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 		lhsNode = expressao->filhos->valor.astNode;
 		rhsNode = caudaDaLista(expressao->filhos)->valor.astNode;
 		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-			verificarTipoDaExpressao(programa, lhsNode);
+			if (!verificarTipoDaExpressao(tabela_simbolos, lhsNode)) {
+				return false;
+			}
 		}
 		if (rhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-			verificarTipoDaExpressao(programa, rhsNode);
+			if (!verificarTipoDaExpressao(tabela_simbolos, rhsNode)) {
+				return false;
+			}
 		}
 		if (lhsNode->tipo_dados != rhsNode->tipo_dados || lhsNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
 			imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, rhsNode->tipo_dados);
@@ -520,7 +579,9 @@ bool verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 	case TAN_NOT:
 		lhsNode = expressao->filhos->valor.astNode;
 		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-			verificarTipoDaExpressao(programa, lhsNode);
+			if (!verificarTipoDaExpressao(tabela_simbolos, lhsNode)) {
+				return false;
+			}
 		}
 		if (lhsNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
 			imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
@@ -535,10 +596,14 @@ bool verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 		lhsNode = expressao->filhos->valor.astNode;
 		rhsNode = caudaDaLista(expressao->filhos)->valor.astNode;
 		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-			verificarTipoDaExpressao(programa, lhsNode);
+			if (!verificarTipoDaExpressao(tabela_simbolos, lhsNode)) {
+				return false;
+			}
 		}
 		if (rhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-			verificarTipoDaExpressao(programa, rhsNode);
+			if (!verificarTipoDaExpressao(tabela_simbolos, rhsNode)) {
+				return false;
+			}
 		}
 		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_REAL && rhsNode ->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
 			expressao->tipo_dados = TIPO_PRIMITIVO_REAL;
@@ -562,7 +627,9 @@ bool verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 	case TAN_NEGATIVACAO:
 		lhsNode = expressao->filhos->valor.astNode;
 		if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-			verificarTipoDaExpressao(programa, lhsNode);
+			if (!verificarTipoDaExpressao(tabela_simbolos, lhsNode)) {
+				return false;
+			}
 		}
 		if (lhsNode->tipo_dados != TIPO_PRIMITIVO_INTEGER && lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 			imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
@@ -577,14 +644,14 @@ bool verificarTipoDaExpressao(programa_t *programa, ast_node_t* expressao) {
 	return true;
 }
 
-bool verificarTipoAtribuicao(programa_t *programa, ast_node_t* atribuicao) {
+bool verificarTipoAtribuicao(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
 	lista_t *lhs = atribuicao->filhos;
 	lista_t *rhs = caudaDaLista(atribuicao->filhos);
 	ast_node_t *lhsNode = lhs->valor.astNode;
 	ast_node_t *rhsNode = rhs->valor.astNode;
 
 	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		variavel_t* variavel = buscaVariavel(lhsNode->valor.strVal, programa->tabela_simbolos, lhsNode->linha);
+		variavel_t* variavel = buscaVariavel(lhsNode->valor.strVal, tabela_simbolos, lhsNode->linha);
 		if (variavel == NULL) {
 			return false;
 		}
@@ -592,7 +659,7 @@ bool verificarTipoAtribuicao(programa_t *programa, ast_node_t* atribuicao) {
 	}
 
 	if (rhsNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		verificarTipoDaExpressao(programa, rhsNode);
+		verificarTipoDaExpressao(tabela_simbolos, rhsNode);
 	}
 
 	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_REAL && rhsNode ->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
@@ -608,7 +675,7 @@ bool verificarTipoAtribuicao(programa_t *programa, ast_node_t* atribuicao) {
 	return true;
 }
 
-bool verificarTipoIf(programa_t *programa, ast_node_t* atribuicao) {
+bool verificarTipoIf(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
 	lista_t *condicao = atribuicao->filhos;
 	lista_t *then_stmts = caudaDaLista(atribuicao->filhos);
 	lista_t *else_stmts = caudaDaLista(then_stmts);
@@ -616,7 +683,7 @@ bool verificarTipoIf(programa_t *programa, ast_node_t* atribuicao) {
 	ast_node_t *condicaoNode = condicao->valor.astNode;
 
 	if (condicaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		verificarTipoDaExpressao(programa, condicaoNode);
+		verificarTipoDaExpressao(tabela_simbolos, condicaoNode);
 	}
 
 	if (condicaoNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
@@ -625,23 +692,23 @@ bool verificarTipoIf(programa_t *programa, ast_node_t* atribuicao) {
 	}
 
 	if (then_stmts != NULL) {
-		verificarTiposDosStatements(programa, then_stmts->valor.lista);
+		verificarTiposDosStatements(tabela_simbolos, then_stmts->valor.lista);
 	}
 
 	if (else_stmts != NULL) {
-		verificarTiposDosStatements(programa, else_stmts->valor.lista);
+		verificarTiposDosStatements(tabela_simbolos, else_stmts->valor.lista);
 	}
 	return true;
 }
 
-bool verificarTipoWhile(programa_t *programa, ast_node_t* atribuicao) {
+bool verificarTipoWhile(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
 	lista_t *condicao = atribuicao->filhos;
 	lista_t *codigo = caudaDaLista(atribuicao->filhos);
 
 	ast_node_t *condicaoNode = condicao->valor.astNode;
 
 	if (condicaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		verificarTipoDaExpressao(programa, condicaoNode);
+		verificarTipoDaExpressao(tabela_simbolos, condicaoNode);
 	}
 
 	if (condicaoNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
@@ -650,23 +717,23 @@ bool verificarTipoWhile(programa_t *programa, ast_node_t* atribuicao) {
 	}
 
 	if (codigo != NULL) {
-		verificarTiposDosStatements(programa, codigo->valor.lista);
+		verificarTiposDosStatements(tabela_simbolos, codigo->valor.lista);
 	}
 	return true;
 }
 
-bool verificarTipoRepeat(programa_t *programa, ast_node_t* atribuicao) {
+bool verificarTipoRepeat(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
 	lista_t *condicao = atribuicao->filhos;
 	lista_t *codigo = caudaDaLista(atribuicao->filhos);
 
 	ast_node_t *condicaoNode = condicao->valor.astNode;
 
 	if (condicaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		verificarTipoDaExpressao(programa, condicaoNode);
+		verificarTipoDaExpressao(tabela_simbolos, condicaoNode);
 	}
 
 	if (codigo != NULL) {
-		verificarTiposDosStatements(programa, codigo->valor.lista);
+		verificarTiposDosStatements(tabela_simbolos, codigo->valor.lista);
 	}
 
 	if (condicaoNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
@@ -676,7 +743,7 @@ bool verificarTipoRepeat(programa_t *programa, ast_node_t* atribuicao) {
 	return true;
 }
 
-bool verificarTipoFor(programa_t *programa, ast_node_t* atribuicao) {
+bool verificarTipoFor(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
 	lista_t *inicializacao = atribuicao->filhos;
 	lista_t *ate = caudaDaLista(inicializacao);
 	lista_t *codigo = caudaDaLista(ate);
@@ -685,7 +752,7 @@ bool verificarTipoFor(programa_t *programa, ast_node_t* atribuicao) {
 	ast_node_t *ateNode = ate->valor.astNode;
 
 	if (inicializacaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		verificarTipoAtribuicao(programa, inicializacaoNode);
+		verificarTipoAtribuicao(tabela_simbolos, inicializacaoNode);
 	}
 
 	if (inicializacaoNode->tipo_dados != TIPO_PRIMITIVO_INTEGER && inicializacaoNode->tipo_dados != TIPO_PRIMITIVO_NAO_PREENCHIDO) {
@@ -695,7 +762,7 @@ bool verificarTipoFor(programa_t *programa, ast_node_t* atribuicao) {
 
 
 	if (ateNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		verificarTipoDaExpressao(programa, ateNode);
+		verificarTipoDaExpressao(tabela_simbolos, ateNode);
 	}
 
 	if (ateNode->tipo_dados != TIPO_PRIMITIVO_INTEGER) {
@@ -705,12 +772,12 @@ bool verificarTipoFor(programa_t *programa, ast_node_t* atribuicao) {
 
 
 	if (codigo != NULL) {
-		verificarTiposDosStatements(programa, codigo->valor.lista);
+		verificarTiposDosStatements(tabela_simbolos, codigo->valor.lista);
 	}
 	return true;
 }
 
-bool verificarTiposDosStatements(programa_t *programa, lista_t *statements) {
+bool verificarTiposDosStatements(mapa_t *tabela_simbolos, lista_t *statements) {
 	bool sucesso = true;
 	while (statements != NULL) {
 		ast_node_t* statement = statements->valor.astNode;
@@ -720,20 +787,20 @@ bool verificarTiposDosStatements(programa_t *programa, lista_t *statements) {
 
 		switch (statement->tipo) {
 		case TAN_ATRIBUICAO:
-			sucesso = verificarTipoAtribuicao(programa, statement);
+			sucesso = verificarTipoAtribuicao(tabela_simbolos, statement);
 			break;
 		case TAN_IF:
-			sucesso = verificarTipoIf(programa, statement);
+			sucesso = verificarTipoIf(tabela_simbolos, statement);
 			break;
 		case TAN_WHILE:
-			sucesso = verificarTipoWhile(programa, statement);
+			sucesso = verificarTipoWhile(tabela_simbolos, statement);
 			break;
 		case TAN_REPEAT:
-			sucesso = verificarTipoRepeat(programa, statement);
+			sucesso = verificarTipoRepeat(tabela_simbolos, statement);
 			break;
 		case TAN_FORTO:
 		case TAN_FORDOWNTO:
-			sucesso = verificarTipoFor(programa, statement);
+			sucesso = verificarTipoFor(tabela_simbolos, statement);
 			break;
 		default:
 			break;
@@ -747,7 +814,29 @@ bool verificarTiposDosStatements(programa_t *programa, lista_t *statements) {
 }
 
 bool verificarTiposDoPrograma(programa_t *programa) {
-	return verificarTiposDosStatements(programa, programa->filhos);
+	if (!verificarTiposDosStatements(programa->tabela_simbolos, programa->filhos)) {
+		return false;
+	}
+
+	lista_t *subrotinas = programa->subrotinas;
+	while (subrotinas != NULL) {
+		ast_node_t* declaracao = subrotinas->valor.astNode;
+		mapa_t *tabela_simbolos;
+		lista_t *codigo_subrotina;
+		if (declaracao->tipo == TAN_PROCEDURE) {
+			tabela_simbolos = declaracao->valor.proVal->tabela_simbolos;
+			codigo_subrotina = declaracao->valor.proVal->filhos;
+		} else {
+			tabela_simbolos = declaracao->valor.funVal->tabela_simbolos;
+			codigo_subrotina = declaracao->valor.proVal->filhos;
+		}
+		if (!verificarTiposDosStatements(tabela_simbolos, codigo_subrotina)) {
+			return false;
+		}
+		subrotinas = caudaDaLista(subrotinas);
+	}
+
+	return true;
 }
 
 void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {

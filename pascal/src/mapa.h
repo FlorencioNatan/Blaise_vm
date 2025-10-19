@@ -13,6 +13,7 @@ typedef struct no no_t;
 struct mapa {
 	no_t* raiz;
 	no_t* nil;
+	mapa_t *mapa_pai;
 };
 
 struct no {

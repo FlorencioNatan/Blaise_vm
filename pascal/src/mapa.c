@@ -153,6 +153,7 @@ mapa_t* addNodeNoMapa(no_t *no, mapa_t *mapa) {
 		no->direita = nil;
 		novo_mapa->raiz = no;
 		novo_mapa->nil = nil;
+		novo_mapa->mapa_pai = NULL;
 		return novo_mapa;
 	}
 
