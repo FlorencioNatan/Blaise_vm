@@ -28,9 +28,9 @@
 #define FIM_MEMORIA_AUXILIAR 1023
 // Memória disponível para o programa
 #define INICIO_MEMORIA_DISPONIVEL 1024
-#define FIM_MEMORIA_DISPONIVEL 4998974
+#define FIM_MEMORIA_DISPONIVEL 4998975
 // Memória usada para se comunicar com as extensões da Máquina virtual
-#define INICIO_MEMORIA_EXTENSAO 4998975
+#define INICIO_MEMORIA_EXTENSAO 4998976
 #define FIM_MEMORIA_EXTENSAO 4999999
 
 typedef union {
