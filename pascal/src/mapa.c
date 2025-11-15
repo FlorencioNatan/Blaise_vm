@@ -19,6 +19,14 @@ no_t* buscarChaveNoMapa(char *chave, mapa_t *mapa) {
 		}
 	}
 
+	if (no == mapa->nil && mapa->mapa_pai != NULL) {
+		no = buscarChaveNoMapa(chave, mapa->mapa_pai);
+		if (no == mapa->mapa_pai->nil) {
+			return mapa->nil;
+		}
+		return no;
+	}
+
 	return no;
 }
 
@@ -236,6 +244,22 @@ variavel_t* buscarVariavelNoMapa(char *chave, mapa_t *mapa) {
 		return NULL;
 	}
 	return resutlado->valor.varVal;
+}
+
+function_t* buscarFunctionNoMapa(char *chave, mapa_t *mapa) {
+	no_t *resutlado = buscarChaveNoMapa(chave, mapa);
+	if (resutlado->tipo != TC_FUNCTION) {
+		return NULL;
+	}
+	return resutlado->valor.funVal;
+}
+
+procedure_t* buscarProcedureNoMapa(char *chave, mapa_t *mapa) {
+	no_t *resutlado = buscarChaveNoMapa(chave, mapa);
+	if (resutlado->tipo != TC_PROCEDURE) {
+		return NULL;
+	}
+	return resutlado->valor.proVal;
 }
 
 bool contemChaveNoMapa(char *chave, mapa_t *mapa) {
