@@ -21,6 +21,7 @@ lista_t* addListaNaLista(lista_t *subLista, lista_t *lista);
 lista_t* cabecaDaLista(lista_t *lista);
 lista_t* caudaDaLista(lista_t *lista);
 bool temCaudaDaLista(lista_t *lista);
+int comprimentoDaLista(lista_t *lista);
 
 void printLista(lista_t *lista);
 

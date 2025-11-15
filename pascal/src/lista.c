@@ -63,3 +63,12 @@ bool temCaudaNaLista(lista_t *lista) {
 	}
 	return false;
 }
+
+int comprimentoDaLista(lista_t *lista) {
+	int comprimento = 0;
+	while (lista != NULL) {
+		lista = lista->proximo;
+		comprimento++;
+	}
+	return comprimento;
+}
