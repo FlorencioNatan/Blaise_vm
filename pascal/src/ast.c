@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <graphviz/gvc.h>
 
-bool verificarTiposDosStatements(mapa_t *tabela_simbolos, lista_t *statements);
+bool verificarTiposDosStatements(mapa_t *tabela_simbolos, lista_t *statements, char *nomeSubrotina);
 
 mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int *posicaoMemoria, int linha) {
 	while (variaveis != NULL) {
@@ -147,6 +147,7 @@ ast_node_t* criarNoProcedure(char* nome, lista_t *parametros, lista_t *variaveis
 	procedure_t* procedure = malloc(sizeof(programa_t));
 	procedure->nome = malloc(sizeof(char) * strlen(nome) + 1);
 	strcpy(procedure->nome, nome);
+
 	procedure->parametros = parametros;
 	procedure->variaveis = variaveis;
 	procedure->filhos = filhos;
@@ -164,6 +165,7 @@ ast_node_t* criarNoFunction(char* nome, lista_t *parametros, lista_t *variaveis,
 	function_t* function = malloc(sizeof(programa_t));
 	function->nome = malloc(sizeof(char) * strlen(nome) + 1);
 	strcpy(function->nome, nome);
+
 	function->parametros = parametros;
 	function->variaveis = variaveis;
 	function->filhos = filhos;
@@ -408,6 +410,23 @@ bool adicionarDeclaracoesSubrotinasNaTabelaDeSimbolos(programa_t *programa) {
 	return true;
 }
 
+lista_t* formatarParametrosSubrotinas(lista_t* parametros) {
+	lista_t* parametros_processados = NULL;
+	while (parametros != NULL) {
+		ast_node_t* declaracao = parametros->valor.astNode;
+		lista_t* variaveis_parametro = declaracao->filhos->valor.lista;
+		int tipoDados = declaracao->valor.iVal;
+		while (variaveis_parametro != NULL) {
+			ast_node_t *variavel = criarNoVariavel(variaveis_parametro->valor.strVal, -1);
+			variavel->tipo_dados = tipoDados;
+			parametros_processados = addNoASTNaLista(variavel, parametros_processados);
+			variaveis_parametro = caudaDaLista(variaveis_parametro);
+		}
+		parametros = caudaDaLista(parametros);
+	}
+	return parametros_processados;
+}
+
 bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
 	lista_t *subrotinas = programa->subrotinas;
 	while (subrotinas != NULL) {
@@ -420,6 +439,7 @@ bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
 			tabela_simbolos = procedure->tabela_simbolos;
 			variaveis = procedure->parametros;
 			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
+			procedure->parametros = formatarParametrosSubrotinas(procedure->parametros);
 			variaveis = procedure->variaveis;
 			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
 			procedure->tabela_simbolos = tabela_simbolos;
@@ -431,6 +451,7 @@ bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
 			tabela_simbolos = function->tabela_simbolos;
 			variaveis = function->parametros;
 			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
+			function->parametros = formatarParametrosSubrotinas(function->parametros);
 			variaveis = function->variaveis;
 			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
 			function->tabela_simbolos = tabela_simbolos;
@@ -489,7 +510,7 @@ char *retornaNomeDoTipo(int tipo) {
 }
 
 void imprimirMensagemDeErroDeTipo(int linha, int tipoUm, int tipoDois) {
-	printf("** Linha %d: Tipos incompativeis. Esperado: %s, encontrado: %s.\n", linha, retornaNomeDoTipo(tipoUm), retornaNomeDoTipo(tipoDois));
+	printf("** Linha %d: Tipos incompatíveis. Esperado: %s, encontrado: %s.\n", linha, retornaNomeDoTipo(tipoUm), retornaNomeDoTipo(tipoDois));
 }
 
 variavel_t* buscaVariavel(char *chave, mapa_t *mapa, int linha) {
@@ -675,15 +696,16 @@ bool verificarTipoAtribuicao(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
 	return true;
 }
 
-bool verificarTipoIf(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
+bool verificarTipoIf(mapa_t *tabela_simbolos, ast_node_t* atribuicao, char *nomeSubrotina) {
 	lista_t *condicao = atribuicao->filhos;
 	lista_t *then_stmts = caudaDaLista(atribuicao->filhos);
 	lista_t *else_stmts = caudaDaLista(then_stmts);
 
 	ast_node_t *condicaoNode = condicao->valor.astNode;
+	bool sucesso = true;
 
 	if (condicaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		verificarTipoDaExpressao(tabela_simbolos, condicaoNode);
+		sucesso = sucesso & verificarTipoDaExpressao(tabela_simbolos, condicaoNode);
 	}
 
 	if (condicaoNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
@@ -692,23 +714,24 @@ bool verificarTipoIf(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
 	}
 
 	if (then_stmts != NULL) {
-		verificarTiposDosStatements(tabela_simbolos, then_stmts->valor.lista);
+		sucesso = sucesso & verificarTiposDosStatements(tabela_simbolos, then_stmts->valor.lista, nomeSubrotina);
 	}
 
 	if (else_stmts != NULL) {
-		verificarTiposDosStatements(tabela_simbolos, else_stmts->valor.lista);
+		sucesso = sucesso & verificarTiposDosStatements(tabela_simbolos, else_stmts->valor.lista, nomeSubrotina);
 	}
-	return true;
+	return sucesso;
 }
 
-bool verificarTipoWhile(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
+bool verificarTipoWhile(mapa_t *tabela_simbolos, ast_node_t* atribuicao, char *nomeSubrotina) {
 	lista_t *condicao = atribuicao->filhos;
 	lista_t *codigo = caudaDaLista(atribuicao->filhos);
 
 	ast_node_t *condicaoNode = condicao->valor.astNode;
+	bool sucesso = true;
 
 	if (condicaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		verificarTipoDaExpressao(tabela_simbolos, condicaoNode);
+		sucesso = sucesso & verificarTipoDaExpressao(tabela_simbolos, condicaoNode);
 	}
 
 	if (condicaoNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
@@ -717,42 +740,44 @@ bool verificarTipoWhile(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
 	}
 
 	if (codigo != NULL) {
-		verificarTiposDosStatements(tabela_simbolos, codigo->valor.lista);
+		sucesso = sucesso & verificarTiposDosStatements(tabela_simbolos, codigo->valor.lista, nomeSubrotina);
 	}
-	return true;
+	return sucesso;
 }
 
-bool verificarTipoRepeat(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
+bool verificarTipoRepeat(mapa_t *tabela_simbolos, ast_node_t* atribuicao, char *nomeSubrotina) {
 	lista_t *condicao = atribuicao->filhos;
 	lista_t *codigo = caudaDaLista(atribuicao->filhos);
 
 	ast_node_t *condicaoNode = condicao->valor.astNode;
+	bool sucesso = true;
 
 	if (condicaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		verificarTipoDaExpressao(tabela_simbolos, condicaoNode);
+		sucesso = sucesso & verificarTipoDaExpressao(tabela_simbolos, condicaoNode);
 	}
 
 	if (codigo != NULL) {
-		verificarTiposDosStatements(tabela_simbolos, codigo->valor.lista);
+		sucesso = sucesso & verificarTiposDosStatements(tabela_simbolos, codigo->valor.lista, nomeSubrotina);
 	}
 
 	if (condicaoNode->tipo_dados != TIPO_PRIMITIVO_BOOLEAN) {
 		imprimirMensagemDeErroDeTipo(condicaoNode->linha, condicaoNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
 		return false;
 	}
-	return true;
+	return sucesso;
 }
 
-bool verificarTipoFor(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
+bool verificarTipoFor(mapa_t *tabela_simbolos, ast_node_t* atribuicao, char *nomeSubrotina) {
 	lista_t *inicializacao = atribuicao->filhos;
 	lista_t *ate = caudaDaLista(inicializacao);
 	lista_t *codigo = caudaDaLista(ate);
 
 	ast_node_t *inicializacaoNode = inicializacao->valor.astNode;
 	ast_node_t *ateNode = ate->valor.astNode;
+	bool sucesso = true;
 
 	if (inicializacaoNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		verificarTipoAtribuicao(tabela_simbolos, inicializacaoNode);
+		sucesso = sucesso & verificarTipoAtribuicao(tabela_simbolos, inicializacaoNode);
 	}
 
 	if (inicializacaoNode->tipo_dados != TIPO_PRIMITIVO_INTEGER && inicializacaoNode->tipo_dados != TIPO_PRIMITIVO_NAO_PREENCHIDO) {
@@ -762,7 +787,7 @@ bool verificarTipoFor(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
 
 
 	if (ateNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-		verificarTipoDaExpressao(tabela_simbolos, ateNode);
+		sucesso = sucesso & verificarTipoDaExpressao(tabela_simbolos, ateNode);
 	}
 
 	if (ateNode->tipo_dados != TIPO_PRIMITIVO_INTEGER) {
@@ -772,12 +797,129 @@ bool verificarTipoFor(mapa_t *tabela_simbolos, ast_node_t* atribuicao) {
 
 
 	if (codigo != NULL) {
-		verificarTiposDosStatements(tabela_simbolos, codigo->valor.lista);
+		sucesso = sucesso & verificarTiposDosStatements(tabela_simbolos, codigo->valor.lista, nomeSubrotina);
 	}
-	return true;
+	return sucesso;
 }
 
-bool verificarTiposDosStatements(mapa_t *tabela_simbolos, lista_t *statements) {
+bool verificarTipoExit(mapa_t *tabela_simbolos, ast_node_t* exit, char *nomeSubrotina) {
+	lista_t *exp = exit->filhos;
+
+	ast_node_t *expNode = exp->valor.astNode;
+	bool sucesso = true;
+
+	if (expNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+		sucesso = sucesso & verificarTipoDaExpressao(tabela_simbolos, expNode);
+	}
+
+	function_t *fun = buscarFunctionNoMapa(nomeSubrotina, tabela_simbolos);
+
+	if (fun == NULL) {
+		printf("** Linha %d: A função exit, só pode ser chamada a partir de uma função.\n", expNode->linha);
+		return false;
+	}
+
+	if (expNode->tipo_dados != fun->tipo_retorno) {
+		imprimirMensagemDeErroDeTipo(expNode->linha, expNode->tipo_dados, fun->tipo_retorno);
+		return false;
+	}
+	return sucesso;
+}
+
+bool verificarTipoChamadaFuncao(mapa_t *tabela_simbolos, ast_node_t* chamada, function_t *fun) {
+	int quantidadeParamentrosChamada = comprimentoDaLista(chamada->filhos);
+	int quantidadeParamentrosFunction = comprimentoDaLista(fun->parametros);
+
+	if (quantidadeParamentrosChamada != quantidadeParamentrosFunction) {
+		printf("** Linha %d: A quantidade de parametros informada é diferente do que a função \"%s\" espera.\n", chamada->linha, fun->nome);
+		return false;
+	}
+
+	bool sucesso = true;
+	lista_t *paramChamada = chamada->filhos;
+	lista_t *paramFunction = fun->parametros;
+	int contadorParametro = 1;
+	while (paramChamada != NULL) {
+		ast_node_t *pcNode = paramChamada->valor.astNode;
+		ast_node_t *pfNode = paramFunction->valor.astNode;
+		if (pcNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			sucesso = sucesso & verificarTipoDaExpressao(tabela_simbolos, pcNode);
+		}
+
+		if (pcNode->tipo_dados != pfNode->tipo_dados) {
+			printf(
+				"** Linha %d: Tipos incompatíveis no parâmetro %d. Esperado: %s, encontrado: %s.\n",
+				chamada->linha,
+				contadorParametro,
+				retornaNomeDoTipo(pfNode->tipo_dados),
+				retornaNomeDoTipo(pcNode->tipo_dados)
+			);
+			return false;
+		}
+
+		paramChamada = caudaDaLista(paramChamada);
+		paramFunction = caudaDaLista(paramFunction);
+		contadorParametro++;
+	}
+
+	return sucesso;
+}
+
+bool verificarTipoChamadaProcedure(mapa_t *tabela_simbolos, ast_node_t* chamada, procedure_t *pro) {
+	int quantidadeParamentrosChamada = comprimentoDaLista(chamada->filhos);
+	int quantidadeParamentrosFunction = comprimentoDaLista(pro->parametros);
+
+	if (quantidadeParamentrosChamada != quantidadeParamentrosFunction) {
+		printf("** Linha %d: A quantidade de parametros informada é diferente do que a função \"%s\" espera.\n", chamada->linha, pro->nome);
+		return false;
+	}
+
+	bool sucesso = true;
+	lista_t *paramChamada = chamada->filhos;
+	lista_t *paramProcedure = pro->parametros;
+	int contadorParametro = 1;
+	while (paramChamada != NULL) {
+		ast_node_t *pcNode = paramChamada->valor.astNode;
+		ast_node_t *ppNode = paramProcedure->valor.astNode;
+		if (pcNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			sucesso = sucesso & verificarTipoDaExpressao(tabela_simbolos, pcNode);
+		}
+
+		if (pcNode->tipo_dados != ppNode->tipo_dados) {
+			printf(
+				"** Linha %d: Tipos incompatíveis no parâmetro %d. Esperado: %s, encontrado: %s.\n",
+				chamada->linha,
+				contadorParametro,
+				retornaNomeDoTipo(ppNode->tipo_dados),
+				retornaNomeDoTipo(pcNode->tipo_dados)
+			);
+			return false;
+		}
+
+		paramChamada = caudaDaLista(paramChamada);
+		paramProcedure = caudaDaLista(paramProcedure);
+		contadorParametro++;
+	}
+
+	return sucesso;
+}
+
+bool verificarTipoChamadaSubrotina(mapa_t *tabela_simbolos, ast_node_t* chamada) {
+	function_t *fun = buscarFunctionNoMapa(chamada->valor.strVal, tabela_simbolos);
+	if (fun != NULL) {
+		return verificarTipoChamadaFuncao(tabela_simbolos, chamada, fun);
+	}
+
+	procedure_t *pro = buscarProcedureNoMapa(chamada->valor.strVal, tabela_simbolos);
+	if (pro != NULL) {
+		return verificarTipoChamadaProcedure(tabela_simbolos, chamada, pro);
+	}
+
+	printf("** Linha %d: A subrotina \"%s\" não exite.\n", chamada->linha, chamada->valor.strVal);
+	return false;
+}
+
+bool verificarTiposDosStatements(mapa_t *tabela_simbolos, lista_t *statements, char *nomeSubrotina) {
 	bool sucesso = true;
 	while (statements != NULL) {
 		ast_node_t* statement = statements->valor.astNode;
@@ -790,17 +932,23 @@ bool verificarTiposDosStatements(mapa_t *tabela_simbolos, lista_t *statements) {
 			sucesso = verificarTipoAtribuicao(tabela_simbolos, statement);
 			break;
 		case TAN_IF:
-			sucesso = verificarTipoIf(tabela_simbolos, statement);
+			sucesso = verificarTipoIf(tabela_simbolos, statement, nomeSubrotina);
 			break;
 		case TAN_WHILE:
-			sucesso = verificarTipoWhile(tabela_simbolos, statement);
+			sucesso = verificarTipoWhile(tabela_simbolos, statement, nomeSubrotina);
 			break;
 		case TAN_REPEAT:
-			sucesso = verificarTipoRepeat(tabela_simbolos, statement);
+			sucesso = verificarTipoRepeat(tabela_simbolos, statement, nomeSubrotina);
 			break;
 		case TAN_FORTO:
 		case TAN_FORDOWNTO:
-			sucesso = verificarTipoFor(tabela_simbolos, statement);
+			sucesso = verificarTipoFor(tabela_simbolos, statement, nomeSubrotina);
+			break;
+		case TAN_EXIT:
+			sucesso = verificarTipoExit(tabela_simbolos, statement, nomeSubrotina);
+			break;
+		case TAN_CHAMADA_SUBROTINA:
+			sucesso = verificarTipoChamadaSubrotina(tabela_simbolos, statement);
 			break;
 		default:
 			break;
@@ -814,7 +962,7 @@ bool verificarTiposDosStatements(mapa_t *tabela_simbolos, lista_t *statements) {
 }
 
 bool verificarTiposDoPrograma(programa_t *programa) {
-	if (!verificarTiposDosStatements(programa->tabela_simbolos, programa->filhos)) {
+	if (!verificarTiposDosStatements(programa->tabela_simbolos, programa->filhos, NULL)) {
 		return false;
 	}
 
@@ -822,15 +970,18 @@ bool verificarTiposDoPrograma(programa_t *programa) {
 	while (subrotinas != NULL) {
 		ast_node_t* declaracao = subrotinas->valor.astNode;
 		mapa_t *tabela_simbolos;
+		char *nome;
 		lista_t *codigo_subrotina;
 		if (declaracao->tipo == TAN_PROCEDURE) {
+			nome = declaracao->valor.proVal->nome;
 			tabela_simbolos = declaracao->valor.proVal->tabela_simbolos;
 			codigo_subrotina = declaracao->valor.proVal->filhos;
 		} else {
+			nome = declaracao->valor.funVal->nome;
 			tabela_simbolos = declaracao->valor.funVal->tabela_simbolos;
 			codigo_subrotina = declaracao->valor.proVal->filhos;
 		}
-		if (!verificarTiposDosStatements(tabela_simbolos, codigo_subrotina)) {
+		if (!verificarTiposDosStatements(tabela_simbolos, codigo_subrotina, nome)) {
 			return false;
 		}
 		subrotinas = caudaDaLista(subrotinas);
