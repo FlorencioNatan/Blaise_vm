@@ -4,6 +4,7 @@
 typedef struct node ast_node_t;
 typedef struct variavel variavel_t;
 typedef struct procedure procedure_t;
+typedef struct programa programa_t;
 typedef struct function function_t;
 typedef struct lista lista_t;
 
