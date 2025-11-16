@@ -34,7 +34,7 @@ mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, i
 			case TIPO_PRIMITIVO_STRING:
 				variavel->valor.strVal = malloc(sizeof(char));
 				variavel->valor.strVal = "";
-				variavel->comprimentoNaMemoria = COMPRIMENTO_STRING_NA_MEMORIA;
+				variavel->comprimentoNaMemoria = COMPRIMENTO_STRING_NA_MEMORIA * 255;
 				break;
 			case TIPO_PRIMITIVO_CHAR:
 				variavel->valor.chVal = ' ';
@@ -104,7 +104,7 @@ mapa_t* adicionaListaVariaveisArrayNaTabelaDeSimbolos(ast_node_t* declaracao, ma
 			case TIPO_PRIMITIVO_STRING:
 				variavel->valor.strVal = malloc(sizeof(char));
 				variavel->valor.strVal = "";
-				variavel->comprimentoNaMemoria = COMPRIMENTO_STRING_NA_MEMORIA;
+				variavel->comprimentoNaMemoria = COMPRIMENTO_STRING_NA_MEMORIA * 255;
 				break;
 			case TIPO_PRIMITIVO_CHAR:
 				variavel->valor.chVal = ' ';
@@ -1194,7 +1194,7 @@ void gerarAssemblyAtribuicao(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
 	strcpy(buffer, "");
-	sprintf(buffer, "    push %d\n", variavel->posicaoNaMemoria);
+	sprintf(buffer, "    push 8\n    lw\n    push %d\n    sub\n", variavel->posicaoNaMemoria);
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 
@@ -1228,7 +1228,7 @@ void gerarAssemblyObterValorDaVariavel(
 	variavel_t* variavel = buscaVariavel(noAST->valor.strVal, tabela_simbolos, noAST->linha);
 
 	char buffer[256] = "";
-	sprintf(buffer, "    push %d\n", variavel->posicaoNaMemoria);
+	sprintf(buffer, "    push 8\n    lw\n    push %d\n    sub\n", variavel->posicaoNaMemoria);
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 
@@ -2056,6 +2056,73 @@ void gerarAssemblyExit(
 	*posicaoAssembly += strlen(buffer);
 }
 
+int retornarComprimentoBasicoNaMemoria(int tipoDeDado) {
+	switch (tipoDeDado) {
+		case TIPO_PRIMITIVO_INTEGER:
+			return COMPRIMENTO_INTEGER_NA_MEMORIA;
+		case TIPO_PRIMITIVO_STRING:
+			return COMPRIMENTO_STRING_NA_MEMORIA;
+		case TIPO_PRIMITIVO_CHAR:
+			return COMPRIMENTO_CHAR_NA_MEMORIA;
+		case TIPO_PRIMITIVO_BOOLEAN:
+			return COMPRIMENTO_BOOLEAN_NA_MEMORIA;
+		case TIPO_PRIMITIVO_REAL:
+			return COMPRIMENTO_REAL_NA_MEMORIA;
+	}
+	return COMPRIMENTO_INTEGER_NA_MEMORIA;
+}
+
+void gerarAssemblyChamadaSubrotina(
+	mapa_t* tabela_simbolos,
+	ast_node_t* noAST,
+	char *assembly,
+	int *posicaoAssembly,
+	int *comprimentoAssembly,
+	contadores_t *contadores
+) {
+
+	char buffer[256] = "", prefixo[10] = "function";
+
+	sprintf(buffer, "# Inicia a chamada à subrotina: %s\n", noAST->valor.strVal);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	strcpy(buffer, "# Adiciona o frame pointer na call stack\n    push 8\n    lw\n    push 0\n    lw\n    sw\n");
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+	strcpy(buffer, "# incrementa o stack pointer\n    push 0\n    lw\n    push 8\n    sub\n    push 0\n    sw\n");
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	lista_t *filhos = noAST->filhos;
+	int contadorParametros = 1;
+	while (filhos != NULL) {
+		ast_node_t* parametro = filhos->valor.astNode;
+
+		sprintf(buffer, "\n# Adiciona o parametro %d na call stack\n", contadorParametros);
+		strcpy(&assembly[*posicaoAssembly], buffer);
+		*posicaoAssembly += strlen(buffer);
+		gerarAssemblyNoAst(tabela_simbolos, parametro, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		strcpy(buffer, "    push 0\n    lw\n    sw\n");
+		strcpy(&assembly[*posicaoAssembly], buffer);
+		*posicaoAssembly += strlen(buffer);
+		sprintf(buffer, "# incrementa o stack pointer\n    push 0\n    lw\n    push %d\n    sub\n    push 0\n    sw\n", retornarComprimentoBasicoNaMemoria(parametro->tipo_dados));
+		strcpy(&assembly[*posicaoAssembly], buffer);
+		*posicaoAssembly += strlen(buffer);
+
+		contadorParametros++;
+		filhos = caudaDaLista(filhos);
+	}
+
+	if (noAST->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+		strcpy(prefixo, "procedure");
+	}
+
+	sprintf(buffer, "\n    call %s_%s\n", prefixo, noAST->valor.strVal);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+}
+
 void gerarAssemblyNoAst(
 	mapa_t* tabela_simbolos,
 	ast_node_t* noAST,
@@ -2163,8 +2230,13 @@ void gerarAssemblyNoAst(
 	case TAN_EXIT:
 		gerarAssemblyExit(tabela_simbolos, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		break;
+	case TAN_CHAMADA_SUBROTINA:
+		gerarAssemblyChamadaSubrotina(tabela_simbolos, noAST, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+		break;
 	case TAN_LISTA_VAR:
 	case TAN_TIPO_ARRAY:
+	case TAN_PROCEDURE:
+	case TAN_FUNCTION:
 		break;
 	}
 }
@@ -2183,6 +2255,21 @@ void gerarAssemblyListaNoAst(
 		gerarAssemblyNoAst(tabela_simbolos, valor, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 		filhos = caudaDaLista(filhos);
 	}
+}
+
+void salvarEnderecoRetornoNaStack(char *assembly, int *posicaoAssembly) {
+	char buffer[256] = "";
+	strcpy(buffer, "# salva endereco de retorno na stack\n    push 0x8\n    lw\n    sw\n\n");
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	strcpy(buffer, "# incrementa o frame pointer\n    push 8\n    lw\n    push 8\n    sub\n    push 8\n    sw\n\n");
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	strcpy(buffer, "# incrementa o stack pointer\n    push 0\n    lw\n    push 8\n    sub\n    push 0\n    sw\n\n");
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
 }
 
 char* gerarAssembly(programa_t *programa) {
@@ -2232,6 +2319,7 @@ char* gerarAssembly(programa_t *programa) {
 		}
 		strcpy(&assembly[posicaoAssembly], buffer);
 		posicaoAssembly += strlen(buffer);
+		salvarEnderecoRetornoNaStack(assembly, &posicaoAssembly);
 		gerarAssemblyListaNoAst(tabelaSimbolosSubRotinas, filhosSubrotina, assembly, &posicaoAssembly, &comprimentoAssembly, contadores);
 		strcpy(&assembly[posicaoAssembly], "    halt\n");
 		posicaoAssembly += strlen("    halt\n");
