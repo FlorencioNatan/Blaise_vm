@@ -2138,7 +2138,19 @@ void gerarAssemblyChamadaSubrotina(
 		strcpy(prefixo, "procedure");
 	}
 
+	strcpy(buffer, "\n# Coloca o frame pointer como stack pointer\n    push 0\n    lw\n    push 8\n    sw\n");
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
 	sprintf(buffer, "\n    calli %s_%s\n", prefixo, noAST->valor.strVal);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	strcpy(buffer, "\n# Restaura o frame pointer\n    push 8\n    lw\n    push 16\n    add\n    lw\n    push 8\n    sw\n\n");
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	strcpy(buffer, "\n# Restaura o stack pointer\n    push 8\n    lw\n    push 4\n    sub\n    push 0\n    sw\n\n");
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 }
