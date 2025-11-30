@@ -82,6 +82,7 @@ typedef struct programa {
 	lista_t *subrotinas;
     lista_t *variaveis;
     lista_t *filhos;
+    int comprimento_memoria_stack;
     int linha;
 } programa_t;
 

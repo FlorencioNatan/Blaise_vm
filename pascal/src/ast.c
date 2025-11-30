@@ -373,7 +373,7 @@ ast_node_t* criarNoExit(ast_node_t* exp, int linha) {
 	return no;
 }
 
-mapa_t * adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(mapa_t *tabela_simbolos, lista_t *declaracoes, bool positivo) {
+mapa_t * adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(mapa_t *tabela_simbolos, lista_t *declaracoes, bool positivo, int *tamanho_memoria_usado) {
 	int posicaoMemoria = 0;
 	while (declaracoes != NULL) {
 		ast_node_t* declaracao = declaracoes->valor.astNode;
@@ -398,6 +398,9 @@ mapa_t * adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(mapa_t *tabela_simbolos
 			return false;
 		}
 		declaracoes = caudaDaLista(declaracoes);
+	}
+	if (tamanho_memoria_usado != NULL) {
+		*tamanho_memoria_usado = posicaoMemoria;
 	}
 	return tabela_simbolos;
 }
@@ -451,10 +454,10 @@ bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
 			procedure_t *procedure = declaracao->valor.proVal;
 			tabela_simbolos = procedure->tabela_simbolos;
 			variaveis = procedure->parametros;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, false);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, false, NULL);
 			procedure->parametros = formatarParametrosSubrotinas(procedure->parametros);
 			variaveis = procedure->variaveis;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true, NULL);
 			procedure->tabela_simbolos = tabela_simbolos;
 			if (procedure->tabela_simbolos != NULL) {
 				procedure->tabela_simbolos->mapa_pai = programa->tabela_simbolos;
@@ -463,10 +466,10 @@ bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
 			function_t *function = declaracao->valor.funVal;
 			tabela_simbolos = function->tabela_simbolos;
 			variaveis = function->parametros;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, false);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, false, NULL);
 			function->parametros = formatarParametrosSubrotinas(function->parametros);
 			variaveis = function->variaveis;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true, NULL);
 			function->tabela_simbolos = tabela_simbolos;
 			if (function->tabela_simbolos != NULL) {
 				function->tabela_simbolos->mapa_pai = programa->tabela_simbolos;
@@ -487,7 +490,7 @@ bool criarTabelaDeSimbolos(programa_t *programa) {
 		return false;
 	}
 
-	programa->tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(programa->tabela_simbolos, programa->variaveis, true);
+	programa->tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(programa->tabela_simbolos, programa->variaveis, true, &programa->comprimento_memoria_stack);
 	if (programa->tabela_simbolos == NULL && programa->variaveis != NULL) {
 		return false;
 	}
@@ -2338,6 +2341,11 @@ char* gerarAssembly(programa_t *programa) {
 		posicaoAssembly += strlen("    halt\n");
 		subrotinas = caudaDaLista(subrotinas);
 	}
+
+	int frame_pointer = FIM_MEMORIA_DISPONIVEL - 8;
+	int stack_pointer = frame_pointer - programa->comprimento_memoria_stack;
+	sprintf(buffer, "\n.data\n0 word 1 %d # stack pointer\n8 word 1 %d # frame pointer\n", stack_pointer, frame_pointer);
+	strcpy(&assembly[posicaoAssembly], buffer);
 
 	free(contadores);
 
