@@ -2131,7 +2131,7 @@ void gerarAssemblyChamadaSubrotina(
 		strcpy(prefixo, "procedure");
 	}
 
-	sprintf(buffer, "\n    call %s_%s\n", prefixo, noAST->valor.strVal);
+	sprintf(buffer, "\n    calli %s_%s\n", prefixo, noAST->valor.strVal);
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 }
