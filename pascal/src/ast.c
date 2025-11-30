@@ -2103,10 +2103,11 @@ void gerarAssemblyChamadaSubrotina(
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 
-	strcpy(buffer, "# Adiciona o frame pointer na call stack\n    push 8\n    lw\n    push 0\n    lw\n    sw\n");
+	strcpy(buffer, "# incrementa o stack pointer\n    push 0\n    lw\n    push 8\n    sub\n    push 0\n    sw\n");
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
-	strcpy(buffer, "# incrementa o stack pointer\n    push 0\n    lw\n    push 8\n    sub\n    push 0\n    sw\n");
+
+	strcpy(buffer, "# Adiciona o frame pointer na call stack\n    push 8\n    lw\n    push 0\n    lw\n    sw\n");
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 
@@ -2115,14 +2116,17 @@ void gerarAssemblyChamadaSubrotina(
 	while (filhos != NULL) {
 		ast_node_t* parametro = filhos->valor.astNode;
 
+		sprintf(buffer, "# incrementa o stack pointer\n    push 0\n    lw\n    push %d\n    sub\n    push 0\n    sw\n", retornarComprimentoBasicoNaMemoria(parametro->tipo_dados));
+		strcpy(&assembly[*posicaoAssembly], buffer);
+		*posicaoAssembly += strlen(buffer);
+
 		sprintf(buffer, "\n# Adiciona o parametro %d na call stack\n", contadorParametros);
 		strcpy(&assembly[*posicaoAssembly], buffer);
 		*posicaoAssembly += strlen(buffer);
+
 		gerarAssemblyNoAst(tabela_simbolos, parametro, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+
 		strcpy(buffer, "    push 0\n    lw\n    sw\n");
-		strcpy(&assembly[*posicaoAssembly], buffer);
-		*posicaoAssembly += strlen(buffer);
-		sprintf(buffer, "# incrementa o stack pointer\n    push 0\n    lw\n    push %d\n    sub\n    push 0\n    sw\n", retornarComprimentoBasicoNaMemoria(parametro->tipo_dados));
 		strcpy(&assembly[*posicaoAssembly], buffer);
 		*posicaoAssembly += strlen(buffer);
 
@@ -2275,15 +2279,15 @@ void gerarAssemblyListaNoAst(
 
 void salvarEnderecoRetornoNaStack(char *assembly, int *posicaoAssembly) {
 	char buffer[256] = "";
-	strcpy(buffer, "# salva endereco de retorno na stack\n    push 0x8\n    lw\n    sw\n\n");
-	strcpy(&assembly[*posicaoAssembly], buffer);
-	*posicaoAssembly += strlen(buffer);
-
 	strcpy(buffer, "# incrementa o frame pointer\n    push 8\n    lw\n    push 8\n    sub\n    push 8\n    sw\n\n");
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 
 	strcpy(buffer, "# incrementa o stack pointer\n    push 0\n    lw\n    push 8\n    sub\n    push 0\n    sw\n\n");
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	strcpy(buffer, "# salva endereco de retorno na stack\n    push 0x8\n    lw\n    sw\n\n");
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 }
