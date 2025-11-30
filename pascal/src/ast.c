@@ -5,7 +5,7 @@
 
 bool verificarTiposDosStatements(mapa_t *tabela_simbolos, lista_t *statements, char *nomeSubrotina);
 
-mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int *posicaoMemoria, int linha) {
+mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int *posicaoMemoria, bool positivo, int linha) {
 	while (variaveis != NULL) {
 		if (variaveis->tipo != TC_STRING) {
 			variaveis = caudaDaLista(variaveis);
@@ -50,8 +50,13 @@ mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, i
 				break;
 		}
 
-		variavel->posicaoNaMemoria = *posicaoMemoria;
-		*posicaoMemoria += variavel->comprimentoNaMemoria;
+		if (positivo) {
+			variavel->posicaoNaMemoria = *posicaoMemoria;
+			*posicaoMemoria += variavel->comprimentoNaMemoria;
+		} else {
+			*posicaoMemoria -= variavel->comprimentoNaMemoria;
+			variavel->posicaoNaMemoria = *posicaoMemoria;
+		}
 
 		tabela_simbolos = addVariavelNoMapa(variavel->nome, variavel, tabela_simbolos);
 		variaveis = caudaDaLista(variaveis);
@@ -60,7 +65,7 @@ mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, i
 	return tabela_simbolos;
 }
 
-mapa_t* adicionaListaVariaveisArrayNaTabelaDeSimbolos(ast_node_t* declaracao, mapa_t *tabela_simbolos, int *posicaoMemoria) {
+mapa_t* adicionaListaVariaveisArrayNaTabelaDeSimbolos(ast_node_t* declaracao, mapa_t *tabela_simbolos, int *posicaoMemoria, bool positivo) {
 	lista_t *variaveis = declaracao->filhos->valor.lista;
 	lista_t *tipo_l = caudaDaLista(declaracao->filhos);
 	lista_t *inicioArray_l = caudaDaLista(tipo_l);
@@ -120,8 +125,14 @@ mapa_t* adicionaListaVariaveisArrayNaTabelaDeSimbolos(ast_node_t* declaracao, ma
 				break;
 		}
 
-		variavel->posicaoNaMemoria = *posicaoMemoria;
-		*posicaoMemoria += variavel->comprimentoNaMemoria * (fimArray - inicioArray + 1);
+
+		if (positivo) {
+			variavel->posicaoNaMemoria = *posicaoMemoria;
+			*posicaoMemoria += variavel->comprimentoNaMemoria * (fimArray - inicioArray + 1);
+		} else {
+			*posicaoMemoria -= variavel->comprimentoNaMemoria * (fimArray - inicioArray + 1);
+			variavel->posicaoNaMemoria = *posicaoMemoria;
+		}
 
 		tabela_simbolos = addVariavelNoMapa(variavel->nome, variavel, tabela_simbolos);
 		variaveis = caudaDaLista(variaveis);
@@ -362,7 +373,7 @@ ast_node_t* criarNoExit(ast_node_t* exp, int linha) {
 	return no;
 }
 
-mapa_t * adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(mapa_t *tabela_simbolos, lista_t *declaracoes) {
+mapa_t * adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(mapa_t *tabela_simbolos, lista_t *declaracoes, bool positivo) {
 	int posicaoMemoria = 0;
 	while (declaracoes != NULL) {
 		ast_node_t* declaracao = declaracoes->valor.astNode;
@@ -372,13 +383,15 @@ mapa_t * adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(mapa_t *tabela_simbolos
 				declaracao->valor.iVal,
 				tabela_simbolos,
 				&posicaoMemoria,
+				positivo,
 				declaracao->linha
 			);
 		} else {
 			tabela_simbolos = adicionaListaVariaveisArrayNaTabelaDeSimbolos(
 				declaracao,
 				tabela_simbolos,
-				&posicaoMemoria
+				&posicaoMemoria,
+				positivo
 			);
 		}
 		if (tabela_simbolos == NULL) {
@@ -438,10 +451,10 @@ bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
 			procedure_t *procedure = declaracao->valor.proVal;
 			tabela_simbolos = procedure->tabela_simbolos;
 			variaveis = procedure->parametros;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, false);
 			procedure->parametros = formatarParametrosSubrotinas(procedure->parametros);
 			variaveis = procedure->variaveis;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true);
 			procedure->tabela_simbolos = tabela_simbolos;
 			if (procedure->tabela_simbolos != NULL) {
 				procedure->tabela_simbolos->mapa_pai = programa->tabela_simbolos;
@@ -450,10 +463,10 @@ bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
 			function_t *function = declaracao->valor.funVal;
 			tabela_simbolos = function->tabela_simbolos;
 			variaveis = function->parametros;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, false);
 			function->parametros = formatarParametrosSubrotinas(function->parametros);
 			variaveis = function->variaveis;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true);
 			function->tabela_simbolos = tabela_simbolos;
 			if (function->tabela_simbolos != NULL) {
 				function->tabela_simbolos->mapa_pai = programa->tabela_simbolos;
@@ -474,7 +487,7 @@ bool criarTabelaDeSimbolos(programa_t *programa) {
 		return false;
 	}
 
-	programa->tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(programa->tabela_simbolos, programa->variaveis);
+	programa->tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(programa->tabela_simbolos, programa->variaveis, true);
 	if (programa->tabela_simbolos == NULL && programa->variaveis != NULL) {
 		return false;
 	}
