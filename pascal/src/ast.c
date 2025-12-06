@@ -51,12 +51,11 @@ mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, i
 				break;
 		}
 
+		variavel->posicaoNaMemoria = *posicaoMemoria;
 		if (positivo) {
-			variavel->posicaoNaMemoria = *posicaoMemoria;
 			*posicaoMemoria += variavel->comprimentoNaMemoria;
 		} else {
 			*posicaoMemoria -= variavel->comprimentoNaMemoria;
-			variavel->posicaoNaMemoria = *posicaoMemoria;
 		}
 
 		tabela_simbolos = addVariavelNoMapa(variavel->nome, variavel, tabela_simbolos);
@@ -376,7 +375,7 @@ ast_node_t* criarNoExit(ast_node_t* exp, int linha) {
 }
 
 mapa_t * adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(mapa_t *tabela_simbolos, lista_t *declaracoes, bool positivo, int *tamanho_memoria_usado) {
-	int posicaoMemoria = 0;
+	int posicaoMemoria = positivo ? 0 : -8;
 	while (declaracoes != NULL) {
 		ast_node_t* declaracao = declaracoes->valor.astNode;
 		if (declaracao->valor.iVal != TIPO_PRIMITIVO_ARRAY) {
