@@ -2071,7 +2071,7 @@ void gerarAssemblyExit(
 
 	char buffer[256] = "";
 
-	strcpy(buffer, "\n# Carrega o PC de onde a funcao foi chamada\n    push 0x8\n    lw\n    push 8\n    add\n    lw\n\n# Retorna para função original Valor de retorno vai na pilha de operações\n    jump\n");
+	strcpy(buffer, "\n# Carrega o PC de onde a funcao foi chamada\n    push 0x8\n    lw\n    lw\n\n# Retorna para função original Valor de retorno vai na pilha de operações\n    jump\n");
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 }
