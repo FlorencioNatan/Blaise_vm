@@ -4,6 +4,7 @@
 #include <graphviz/gvc.h>
 
 bool verificarTiposDosStatements(mapa_t *tabela_simbolos, lista_t *statements, char *nomeSubrotina);
+bool verificarTipoDaExpressao(mapa_t *tabela_simbolos, ast_node_t* expressao);
 
 mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, int tipo, mapa_t *tabela_simbolos, int *posicaoMemoria, bool positivo, int linha) {
 	while (variaveis != NULL) {
@@ -359,6 +360,7 @@ ast_node_t* criarNoChamadaSubrotina(char* nomeVariavel, lista_t* parametros, int
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_CHAMADA_SUBROTINA;
 	no->filhos = parametros;
+	no->tipo_dados = TIPO_PRIMITIVO_NAO_PREENCHIDO;
 	no->valor.strVal = malloc(sizeof(char) * (strlen(nomeVariavel) + 1));
 	strcpy(no->valor.strVal, nomeVariavel);
 	no->linha = linha;
@@ -544,6 +546,100 @@ variavel_t* buscaVariavel(char *chave, mapa_t *mapa, int linha) {
 	return variavel;
 }
 
+bool verificarTipoChamadaFuncao(mapa_t *tabela_simbolos, ast_node_t* chamada, function_t *fun) {
+	int quantidadeParamentrosChamada = comprimentoDaLista(chamada->filhos);
+	int quantidadeParamentrosFunction = comprimentoDaLista(fun->parametros);
+
+	if (quantidadeParamentrosChamada != quantidadeParamentrosFunction) {
+		printf("** Linha %d: A quantidade de parametros informada é diferente do que a função \"%s\" espera.\n", chamada->linha, fun->nome);
+		return false;
+	}
+
+	bool sucesso = true;
+	lista_t *paramChamada = chamada->filhos;
+	lista_t *paramFunction = fun->parametros;
+	int contadorParametro = 1;
+	while (paramChamada != NULL) {
+		ast_node_t *pcNode = paramChamada->valor.astNode;
+		ast_node_t *pfNode = paramFunction->valor.astNode;
+		if (pcNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			sucesso = sucesso & verificarTipoDaExpressao(tabela_simbolos, pcNode);
+		}
+
+		if (pcNode->tipo_dados != pfNode->tipo_dados) {
+			printf(
+				"** Linha %d: Tipos incompatíveis no parâmetro %d. Esperado: %s, encontrado: %s.\n",
+				chamada->linha,
+				contadorParametro,
+				retornaNomeDoTipo(pfNode->tipo_dados),
+				retornaNomeDoTipo(pcNode->tipo_dados)
+			);
+			return false;
+		}
+
+		paramChamada = caudaDaLista(paramChamada);
+		paramFunction = caudaDaLista(paramFunction);
+		contadorParametro++;
+	}
+
+	chamada->tipo_dados = fun->tipo_retorno;
+	return sucesso;
+}
+
+bool verificarTipoChamadaProcedure(mapa_t *tabela_simbolos, ast_node_t* chamada, procedure_t *pro) {
+	int quantidadeParamentrosChamada = comprimentoDaLista(chamada->filhos);
+	int quantidadeParamentrosFunction = comprimentoDaLista(pro->parametros);
+
+	if (quantidadeParamentrosChamada != quantidadeParamentrosFunction) {
+		printf("** Linha %d: A quantidade de parametros informada é diferente do que a função \"%s\" espera.\n", chamada->linha, pro->nome);
+		return false;
+	}
+
+	bool sucesso = true;
+	lista_t *paramChamada = chamada->filhos;
+	lista_t *paramProcedure = pro->parametros;
+	int contadorParametro = 1;
+	while (paramChamada != NULL) {
+		ast_node_t *pcNode = paramChamada->valor.astNode;
+		ast_node_t *ppNode = paramProcedure->valor.astNode;
+		if (pcNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+			sucesso = sucesso & verificarTipoDaExpressao(tabela_simbolos, pcNode);
+		}
+
+		if (pcNode->tipo_dados != ppNode->tipo_dados) {
+			printf(
+				"** Linha %d: Tipos incompatíveis no parâmetro %d. Esperado: %s, encontrado: %s.\n",
+				chamada->linha,
+				contadorParametro,
+				retornaNomeDoTipo(ppNode->tipo_dados),
+				retornaNomeDoTipo(pcNode->tipo_dados)
+			);
+			return false;
+		}
+
+		paramChamada = caudaDaLista(paramChamada);
+		paramProcedure = caudaDaLista(paramProcedure);
+		contadorParametro++;
+	}
+
+	return sucesso;
+}
+
+bool verificarTipoChamadaSubrotina(mapa_t *tabela_simbolos, ast_node_t* chamada) {
+	function_t *fun = buscarFunctionNoMapa(chamada->valor.strVal, tabela_simbolos);
+	if (fun != NULL) {
+		return verificarTipoChamadaFuncao(tabela_simbolos, chamada, fun);
+	}
+
+	procedure_t *pro = buscarProcedureNoMapa(chamada->valor.strVal, tabela_simbolos);
+	if (pro != NULL) {
+		return verificarTipoChamadaProcedure(tabela_simbolos, chamada, pro);
+	}
+
+	printf("** Linha %d: A subrotina \"%s\" não exite.\n", chamada->linha, chamada->valor.strVal);
+	return false;
+}
+
 bool verificarTipoDaExpressao(mapa_t *tabela_simbolos, ast_node_t* expressao) {
 	ast_node_t *lhsNode = NULL;
 	ast_node_t *rhsNode = NULL;
@@ -674,6 +770,8 @@ bool verificarTipoDaExpressao(mapa_t *tabela_simbolos, ast_node_t* expressao) {
 		}
 		expressao->tipo_dados = lhsNode->tipo_dados;
 		break;
+	case TAN_CHAMADA_SUBROTINA:
+		return verificarTipoChamadaSubrotina(tabela_simbolos, expressao);
 		break;
 	default: break;
 	}
@@ -840,99 +938,6 @@ bool verificarTipoExit(mapa_t *tabela_simbolos, ast_node_t* exit, char *nomeSubr
 		return false;
 	}
 	return sucesso;
-}
-
-bool verificarTipoChamadaFuncao(mapa_t *tabela_simbolos, ast_node_t* chamada, function_t *fun) {
-	int quantidadeParamentrosChamada = comprimentoDaLista(chamada->filhos);
-	int quantidadeParamentrosFunction = comprimentoDaLista(fun->parametros);
-
-	if (quantidadeParamentrosChamada != quantidadeParamentrosFunction) {
-		printf("** Linha %d: A quantidade de parametros informada é diferente do que a função \"%s\" espera.\n", chamada->linha, fun->nome);
-		return false;
-	}
-
-	bool sucesso = true;
-	lista_t *paramChamada = chamada->filhos;
-	lista_t *paramFunction = fun->parametros;
-	int contadorParametro = 1;
-	while (paramChamada != NULL) {
-		ast_node_t *pcNode = paramChamada->valor.astNode;
-		ast_node_t *pfNode = paramFunction->valor.astNode;
-		if (pcNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-			sucesso = sucesso & verificarTipoDaExpressao(tabela_simbolos, pcNode);
-		}
-
-		if (pcNode->tipo_dados != pfNode->tipo_dados) {
-			printf(
-				"** Linha %d: Tipos incompatíveis no parâmetro %d. Esperado: %s, encontrado: %s.\n",
-				chamada->linha,
-				contadorParametro,
-				retornaNomeDoTipo(pfNode->tipo_dados),
-				retornaNomeDoTipo(pcNode->tipo_dados)
-			);
-			return false;
-		}
-
-		paramChamada = caudaDaLista(paramChamada);
-		paramFunction = caudaDaLista(paramFunction);
-		contadorParametro++;
-	}
-
-	return sucesso;
-}
-
-bool verificarTipoChamadaProcedure(mapa_t *tabela_simbolos, ast_node_t* chamada, procedure_t *pro) {
-	int quantidadeParamentrosChamada = comprimentoDaLista(chamada->filhos);
-	int quantidadeParamentrosFunction = comprimentoDaLista(pro->parametros);
-
-	if (quantidadeParamentrosChamada != quantidadeParamentrosFunction) {
-		printf("** Linha %d: A quantidade de parametros informada é diferente do que a função \"%s\" espera.\n", chamada->linha, pro->nome);
-		return false;
-	}
-
-	bool sucesso = true;
-	lista_t *paramChamada = chamada->filhos;
-	lista_t *paramProcedure = pro->parametros;
-	int contadorParametro = 1;
-	while (paramChamada != NULL) {
-		ast_node_t *pcNode = paramChamada->valor.astNode;
-		ast_node_t *ppNode = paramProcedure->valor.astNode;
-		if (pcNode->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
-			sucesso = sucesso & verificarTipoDaExpressao(tabela_simbolos, pcNode);
-		}
-
-		if (pcNode->tipo_dados != ppNode->tipo_dados) {
-			printf(
-				"** Linha %d: Tipos incompatíveis no parâmetro %d. Esperado: %s, encontrado: %s.\n",
-				chamada->linha,
-				contadorParametro,
-				retornaNomeDoTipo(ppNode->tipo_dados),
-				retornaNomeDoTipo(pcNode->tipo_dados)
-			);
-			return false;
-		}
-
-		paramChamada = caudaDaLista(paramChamada);
-		paramProcedure = caudaDaLista(paramProcedure);
-		contadorParametro++;
-	}
-
-	return sucesso;
-}
-
-bool verificarTipoChamadaSubrotina(mapa_t *tabela_simbolos, ast_node_t* chamada) {
-	function_t *fun = buscarFunctionNoMapa(chamada->valor.strVal, tabela_simbolos);
-	if (fun != NULL) {
-		return verificarTipoChamadaFuncao(tabela_simbolos, chamada, fun);
-	}
-
-	procedure_t *pro = buscarProcedureNoMapa(chamada->valor.strVal, tabela_simbolos);
-	if (pro != NULL) {
-		return verificarTipoChamadaProcedure(tabela_simbolos, chamada, pro);
-	}
-
-	printf("** Linha %d: A subrotina \"%s\" não exite.\n", chamada->linha, chamada->valor.strVal);
-	return false;
 }
 
 bool verificarTiposDosStatements(mapa_t *tabela_simbolos, lista_t *statements, char *nomeSubrotina) {
@@ -2116,17 +2121,41 @@ void gerarAssemblyChamadaSubrotina(
 	while (filhos != NULL) {
 		ast_node_t* parametro = filhos->valor.astNode;
 
-		sprintf(buffer, "# incrementa o stack pointer\n    push 0\n    lw\n    push %d\n    sub\n    push 0\n    sw\n", retornarComprimentoBasicoNaMemoria(parametro->tipo_dados));
+		sprintf(buffer, "\n# incrementa o stack pointer\n    push 0\n    lw\n    push %d\n    sub\n    push 0\n    sw\n", retornarComprimentoBasicoNaMemoria(parametro->tipo_dados));
 		strcpy(&assembly[*posicaoAssembly], buffer);
 		*posicaoAssembly += strlen(buffer);
 
-		sprintf(buffer, "\n# Adiciona o parametro %d na call stack\n", contadorParametros);
+		sprintf(buffer, "# Adiciona o parametro %d na call stack\n", contadorParametros);
 		strcpy(&assembly[*posicaoAssembly], buffer);
 		*posicaoAssembly += strlen(buffer);
 
 		gerarAssemblyNoAst(tabela_simbolos, parametro, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
-		strcpy(buffer, "    push 0\n    lw\n    sw\n");
+		strcpy(buffer, "    push 0\n    lw\n");
+		strcpy(&assembly[*posicaoAssembly], buffer);
+		*posicaoAssembly += strlen(buffer);
+
+		switch (parametro->tipo_dados) {
+		case TIPO_PRIMITIVO_INTEGER:
+			strcpy(buffer, "    sh\n");
+			break;
+		case TIPO_PRIMITIVO_STRING:
+			strcpy(buffer, "    sb\n");
+			break;
+		case TIPO_PRIMITIVO_CHAR:
+			strcpy(buffer, "    sb\n");
+			break;
+		case TIPO_PRIMITIVO_BOOLEAN:
+			strcpy(buffer, "    sb\n");
+			break;
+		case TIPO_PRIMITIVO_REAL:
+			strcpy(buffer, "    sw\n");
+			break;
+		default:
+			strcpy(buffer, "");
+			break;
+		}
+
 		strcpy(&assembly[*posicaoAssembly], buffer);
 		*posicaoAssembly += strlen(buffer);
 
