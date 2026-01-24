@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include "instrucoes.h"
 #include "tabelaJump.h"
 
@@ -395,7 +396,20 @@ uint8_t* processar_arquivo_assembly(
     char *assembly = malloc((tamanhoArquivoBytes+1) * sizeof(char));
     char ch = fgetc(arquivoBass);
     int indiceAssembly = 0;
+    bool comentario = false;
     do {
+    	if (ch == '#') {
+    		comentario = true;
+    	}
+    	if (comentario && ch == '\n') {
+    		comentario = false;
+    		ch = fgetc(arquivoBass);
+    		continue;
+    	}
+    	if (comentario) {
+    		ch = fgetc(arquivoBass);
+    		continue;
+    	}
         assembly[indiceAssembly++] = ch;
         ch = fgetc(arquivoBass);
     } while (ch != EOF);
