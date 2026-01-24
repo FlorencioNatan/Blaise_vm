@@ -92,6 +92,7 @@ typedef struct procedure {
 	lista_t *parametros;
 	lista_t *variaveis;
 	lista_t *filhos;
+	int comprimento_memoria_stack;
     int comprimento_parametros_stack;
 } procedure_t;
 
@@ -102,6 +103,7 @@ typedef struct function {
 	lista_t *variaveis;
 	lista_t *filhos;
 	int tipo_retorno;
+	int comprimento_memoria_stack;
 	int comprimento_parametros_stack;
 } function_t;
 

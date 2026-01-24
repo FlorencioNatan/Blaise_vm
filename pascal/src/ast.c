@@ -51,11 +51,12 @@ mapa_t* adicionaListaVariaveisPrimitivasNaTabelaDeSimbolos(lista_t *variaveis, i
 				break;
 		}
 
-		variavel->posicaoNaMemoria = *posicaoMemoria;
 		if (positivo) {
+			variavel->posicaoNaMemoria = *posicaoMemoria;
 			*posicaoMemoria += variavel->comprimentoNaMemoria;
 		} else {
 			*posicaoMemoria -= variavel->comprimentoNaMemoria;
+			variavel->posicaoNaMemoria = *posicaoMemoria;
 		}
 
 		tabela_simbolos = addVariavelNoMapa(variavel->nome, variavel, tabela_simbolos);
@@ -163,6 +164,7 @@ ast_node_t* criarNoProcedure(char* nome, lista_t *parametros, lista_t *variaveis
 	procedure->variaveis = variaveis;
 	procedure->filhos = filhos;
 	procedure->tabela_simbolos = NULL;
+	procedure->comprimento_memoria_stack = 0;
 	procedure->comprimento_parametros_stack = 0;
 
 	ast_node_t* no = malloc(sizeof(ast_node_t));
@@ -174,7 +176,7 @@ ast_node_t* criarNoProcedure(char* nome, lista_t *parametros, lista_t *variaveis
 }
 
 ast_node_t* criarNoFunction(char* nome, lista_t *parametros, lista_t *variaveis, lista_t *filhos, int tipo_retorno, int linha) {
-	function_t* function = malloc(sizeof(programa_t));
+	function_t* function = malloc(sizeof(function_t));
 	function->nome = malloc(sizeof(char) * strlen(nome) + 1);
 	strcpy(function->nome, nome);
 
@@ -183,6 +185,7 @@ ast_node_t* criarNoFunction(char* nome, lista_t *parametros, lista_t *variaveis,
 	function->filhos = filhos;
 	function->tabela_simbolos = NULL;
 	function->tipo_retorno = tipo_retorno;
+	function->comprimento_memoria_stack = 0;
 	function->comprimento_parametros_stack = 0;
 
 	ast_node_t* no = malloc(sizeof(ast_node_t));
@@ -461,7 +464,7 @@ bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
 			procedure->comprimento_parametros_stack = abs(procedure->comprimento_parametros_stack);
 			procedure->parametros = formatarParametrosSubrotinas(procedure->parametros);
 			variaveis = procedure->variaveis;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true, NULL);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true, &procedure->comprimento_memoria_stack);
 			procedure->tabela_simbolos = tabela_simbolos;
 			if (procedure->tabela_simbolos != NULL) {
 				procedure->tabela_simbolos->mapa_pai = programa->tabela_simbolos;
@@ -474,7 +477,7 @@ bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
 			function->comprimento_parametros_stack = abs(function->comprimento_parametros_stack);
 			function->parametros = formatarParametrosSubrotinas(function->parametros);
 			variaveis = function->variaveis;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true, NULL);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true, &function->comprimento_memoria_stack);
 			function->tabela_simbolos = tabela_simbolos;
 			if (function->tabela_simbolos != NULL) {
 				function->tabela_simbolos->mapa_pai = programa->tabela_simbolos;
@@ -1218,13 +1221,13 @@ void gerarAssemblyAtribuicao(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
 	strcpy(buffer, "");
-	sprintf(buffer, "    push 8\n    lw\n    push %d\n    sub\n", variavel->posicaoNaMemoria);
+	sprintf(buffer, "    push 8\n    lw\n");
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 
 	switch (variavel->tipo) {
 	case TIPO_PRIMITIVO_INTEGER:
-		strcpy(buffer, "    sh\n");
+		sprintf(buffer, "    push %d\n    sub\n    sh\n", variavel->posicaoNaMemoria + 4);
 		break;
 	case TIPO_PRIMITIVO_STRING:
 		strcpy(buffer, "    sb\n");
@@ -1236,7 +1239,7 @@ void gerarAssemblyAtribuicao(
 		strcpy(buffer, "    sb\n");
 		break;
 	case TIPO_PRIMITIVO_REAL:
-		strcpy(buffer, "    sw\n");
+		sprintf(buffer, "    push %d\n    sub\n    sw\n", variavel->posicaoNaMemoria + 8);
 		break;
 	}
 	strcpy(&assembly[*posicaoAssembly], buffer);
@@ -1252,13 +1255,13 @@ void gerarAssemblyObterValorDaVariavel(
 	variavel_t* variavel = buscaVariavel(noAST->valor.strVal, tabela_simbolos, noAST->linha);
 
 	char buffer[256] = "";
-	sprintf(buffer, "    push 8\n    lw\n    push %d\n    sub\n", variavel->posicaoNaMemoria);
+	sprintf(buffer, "    push 8\n    lw\n");
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 
 	switch (variavel->tipo) {
 	case TIPO_PRIMITIVO_INTEGER:
-		strcpy(buffer, "    lh\n");
+		sprintf(buffer, "    push %d\n    sub\n    lh\n", variavel->posicaoNaMemoria + 4);
 		break;
 	case TIPO_PRIMITIVO_STRING:
 		strcpy(buffer, "    lb\n");
@@ -1270,7 +1273,7 @@ void gerarAssemblyObterValorDaVariavel(
 		strcpy(buffer, "    lb\n");
 		break;
 	case TIPO_PRIMITIVO_REAL:
-		strcpy(buffer, "    lw\n");
+		sprintf(buffer, "    push %d\n    sub\n    lw\n", variavel->posicaoNaMemoria + 8);
 		break;
 	}
 	strcpy(&assembly[*posicaoAssembly], buffer);
@@ -2380,27 +2383,35 @@ char* gerarAssembly(programa_t *programa) {
 		ast_node_t* noSubrotinas = subrotinas->valor.astNode;
 		lista_t* filhosSubrotina = NULL;
 		mapa_t* tabelaSimbolosSubRotinas = NULL;
+		int comprimentoMemoria = 0;
 		if (noSubrotinas->tipo == TAN_PROCEDURE) {
 			procedure_t *pro = noSubrotinas->valor.proVal;
 			filhosSubrotina = pro->filhos;
 			tabelaSimbolosSubRotinas = pro->tabela_simbolos;
 			sprintf(buffer, "\nprocedure_%s:\n", pro->nome);
+			comprimentoMemoria = pro->comprimento_memoria_stack;
 		} else {
 			function_t *fun = noSubrotinas->valor.funVal;
 			filhosSubrotina = fun->filhos;
 			tabelaSimbolosSubRotinas = fun->tabela_simbolos;
 			sprintf(buffer, "\nfunction_%s:\n", fun->nome);
+			comprimentoMemoria = fun->comprimento_memoria_stack;
 		}
 		strcpy(&assembly[posicaoAssembly], buffer);
 		posicaoAssembly += strlen(buffer);
 		salvarEnderecoRetornoNaStack(assembly, &posicaoAssembly);
+
+		sprintf(buffer, "# incrementa o stack pointer\n    push 0\n    lw\n    push %d\n    sub\n    push 0\n    sw\n\n", comprimentoMemoria);
+		strcpy(&assembly[posicaoAssembly], buffer);
+		posicaoAssembly += strlen(buffer);
+
 		gerarAssemblyListaNoAst(tabelaSimbolosSubRotinas, filhosSubrotina, assembly, &posicaoAssembly, &comprimentoAssembly, contadores);
 		strcpy(&assembly[posicaoAssembly], "    halt\n");
 		posicaoAssembly += strlen("    halt\n");
 		subrotinas = caudaDaLista(subrotinas);
 	}
 
-	int frame_pointer = FIM_MEMORIA_DISPONIVEL - 8;
+	int frame_pointer = FIM_MEMORIA_DISPONIVEL;
 	int stack_pointer = frame_pointer - programa->comprimento_memoria_stack;
 	sprintf(buffer, "\n.data\n0 word 1 %d # stack pointer\n8 word 1 %d # frame pointer\n", stack_pointer, frame_pointer);
 	strcpy(&assembly[posicaoAssembly], buffer);
