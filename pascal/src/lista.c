@@ -41,7 +41,7 @@ void printLista(lista_t *lista) {
 	while (lista != NULL) {
 		if (lista->tipo == TC_STRING) {
 			printf("%s -> ", lista->valor.strVal);
-		} else if (lista->tipo == TC_STRING) {
+		} else if (lista->tipo == TC_INT) {
 			printf("%d -> ", lista->valor.iVal);
 		}
 		lista = lista->proximo;
@@ -71,4 +71,25 @@ int comprimentoDaLista(lista_t *lista) {
 		comprimento++;
 	}
 	return comprimento;
+}
+
+lista_t* inverterLista(lista_t *lista) {
+	lista_t *nova_lista = NULL;
+	while (lista != NULL) {
+		lista_t *auxiliar = malloc(sizeof(lista_t));
+		auxiliar->tipo = lista->tipo;
+		auxiliar->valor = lista->valor;
+		auxiliar->proximo = nova_lista;
+		nova_lista = auxiliar;
+		lista = lista->proximo;
+	}
+	return nova_lista;
+}
+
+void freeLista(lista_t *lista) {
+	while (lista != NULL) {
+		lista_t * proximo = lista->proximo;
+		free(lista);
+		lista = proximo;
+	}
 }

@@ -22,6 +22,8 @@ lista_t* cabecaDaLista(lista_t *lista);
 lista_t* caudaDaLista(lista_t *lista);
 bool temCaudaDaLista(lista_t *lista);
 int comprimentoDaLista(lista_t *lista);
+lista_t* inverterLista(lista_t *lista);
+void freeLista(lista_t *lista);
 
 void printLista(lista_t *lista);
 
