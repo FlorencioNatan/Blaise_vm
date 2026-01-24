@@ -163,6 +163,7 @@ ast_node_t* criarNoProcedure(char* nome, lista_t *parametros, lista_t *variaveis
 	procedure->variaveis = variaveis;
 	procedure->filhos = filhos;
 	procedure->tabela_simbolos = NULL;
+	procedure->comprimento_parametros_stack = 0;
 
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_PROCEDURE;
@@ -182,6 +183,7 @@ ast_node_t* criarNoFunction(char* nome, lista_t *parametros, lista_t *variaveis,
 	function->filhos = filhos;
 	function->tabela_simbolos = NULL;
 	function->tipo_retorno = tipo_retorno;
+	function->comprimento_parametros_stack = 0;
 
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = TAN_FUNCTION;
@@ -454,8 +456,9 @@ bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
 		if (declaracao->tipo == TAN_PROCEDURE) {
 			procedure_t *procedure = declaracao->valor.proVal;
 			tabela_simbolos = procedure->tabela_simbolos;
-			variaveis = procedure->parametros;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, false, NULL);
+			variaveis = inverterLista(procedure->parametros);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, false, &procedure->comprimento_parametros_stack);
+			procedure->comprimento_parametros_stack = abs(procedure->comprimento_parametros_stack);
 			procedure->parametros = formatarParametrosSubrotinas(procedure->parametros);
 			variaveis = procedure->variaveis;
 			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true, NULL);
@@ -466,8 +469,9 @@ bool adicionarDeclaracoesDeVariaveisDasSubrotinas(programa_t *programa) {
 		} else {
 			function_t *function = declaracao->valor.funVal;
 			tabela_simbolos = function->tabela_simbolos;
-			variaveis = function->parametros;
-			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, false, NULL);
+			variaveis = inverterLista(function->parametros);
+			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, false, &function->comprimento_parametros_stack);
+			function->comprimento_parametros_stack = abs(function->comprimento_parametros_stack);
 			function->parametros = formatarParametrosSubrotinas(function->parametros);
 			variaveis = function->variaveis;
 			tabela_simbolos = adicionarDeclaracoesVariaveisNaTabelaDeSimbolos(tabela_simbolos, variaveis, true, NULL);
@@ -2100,7 +2104,6 @@ void gerarAssemblyChamadaSubrotina(
 	int *comprimentoAssembly,
 	contadores_t *contadores
 ) {
-
 	char buffer[256] = "", prefixo[10] = "function";
 
 	sprintf(buffer, "# Inicia a chamada à subrotina: %s\n", noAST->valor.strVal);
@@ -2115,7 +2118,8 @@ void gerarAssemblyChamadaSubrotina(
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 
-	lista_t *filhos = noAST->filhos;
+	lista_t *filhosInvertidos = inverterLista(noAST->filhos);
+	lista_t *filhos = filhosInvertidos;
 	int contadorParametros = 1;
 	while (filhos != NULL) {
 		ast_node_t* parametro = filhos->valor.astNode;
@@ -2161,6 +2165,7 @@ void gerarAssemblyChamadaSubrotina(
 		contadorParametros++;
 		filhos = caudaDaLista(filhos);
 	}
+	freeLista(filhosInvertidos);
 
 	if (noAST->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
 		strcpy(prefixo, "procedure");
@@ -2174,7 +2179,16 @@ void gerarAssemblyChamadaSubrotina(
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 
-	strcpy(buffer, "\n# Restaura o frame pointer\n    push 8\n    lw\n    push 16\n    add\n    lw\n    push 8\n    sw\n\n");
+	int comprimento_parametros_stack = 0;
+	if (noAST->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
+		procedure_t *pro = buscarProcedureNoMapa(noAST->valor.strVal, tabela_simbolos);
+		comprimento_parametros_stack = pro ->comprimento_parametros_stack;
+	} else {
+		function_t *fun = buscarFunctionNoMapa(noAST->valor.strVal, tabela_simbolos);
+		comprimento_parametros_stack = fun->comprimento_parametros_stack;
+	}
+
+	sprintf(buffer, "\n# Restaura o frame pointer\n    push 8\n    lw\n    push %d\n    add\n    lw\n    push 8\n    sw\n\n", comprimento_parametros_stack);
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
 
