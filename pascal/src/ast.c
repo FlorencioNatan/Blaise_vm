@@ -1308,7 +1308,7 @@ void gerarAssemblySoma(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 	gerarAssemblyNoAst(tabela_simbolos, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
-	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+	if (lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL && rhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 		strcpy(&assembly[*posicaoAssembly], "    add\n");
 		*posicaoAssembly += strlen("    add\n");
 	} else {
@@ -1333,7 +1333,7 @@ void gerarAssemblySubtracao(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 	gerarAssemblyNoAst(tabela_simbolos, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
-	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+	if (lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL && rhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 		strcpy(&assembly[*posicaoAssembly], "    sub\n");
 		*posicaoAssembly += strlen("    sub\n");
 	} else {
@@ -1358,7 +1358,7 @@ void gerarAssemblyMultiplicacao(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 	gerarAssemblyNoAst(tabela_simbolos, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
-	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+	if (lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL && rhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 		strcpy(&assembly[*posicaoAssembly], "    mul\n");
 		*posicaoAssembly += strlen("    mul\n");
 	} else {
@@ -1383,7 +1383,7 @@ void gerarAssemblyDivisao(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 	gerarAssemblyNoAst(tabela_simbolos, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
-	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+	if (lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL && rhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 		strcpy(&assembly[*posicaoAssembly], "    div\n");
 		*posicaoAssembly += strlen("    div\n");
 	} else {
@@ -1432,7 +1432,7 @@ void gerarAssemblyIgual(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 	gerarAssemblyNoAst(tabela_simbolos, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
-	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+	if (lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL && rhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 		strcpy(&assembly[*posicaoAssembly], "    sub\n");
 		*posicaoAssembly += strlen("    sub\n");
 	} else {
@@ -1473,7 +1473,7 @@ void gerarAssemblyDiferente(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 	gerarAssemblyNoAst(tabela_simbolos, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
-	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+	if (lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL && rhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 		strcpy(&assembly[*posicaoAssembly], "    sub\n");
 		*posicaoAssembly += strlen("    sub\n");
 	} else {
@@ -1514,7 +1514,7 @@ void gerarAssemblyMaior(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 	gerarAssemblyNoAst(tabela_simbolos, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
-	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+	if (lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL && rhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 		strcpy(&assembly[*posicaoAssembly], "    sub\n");
 		*posicaoAssembly += strlen("    sub\n");
 	} else {
@@ -1555,7 +1555,7 @@ void gerarAssemblyMaiorIgual(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 	gerarAssemblyNoAst(tabela_simbolos, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
-	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+	if (lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL && rhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 		strcpy(&assembly[*posicaoAssembly], "    sub\n");
 		*posicaoAssembly += strlen("    sub\n");
 	} else {
@@ -1596,7 +1596,7 @@ void gerarAssemblyMenor(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 	gerarAssemblyNoAst(tabela_simbolos, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
-	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+	if (lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL && rhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 		strcpy(&assembly[*posicaoAssembly], "    sub\n");
 		*posicaoAssembly += strlen("    sub\n");
 	} else {
@@ -1637,7 +1637,7 @@ void gerarAssemblyMenorIgual(
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 	gerarAssemblyNoAst(tabela_simbolos, lhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
-	if (lhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER && rhsNode->tipo_dados == TIPO_PRIMITIVO_INTEGER) {
+	if (lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL && rhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
 		strcpy(&assembly[*posicaoAssembly], "    sub\n");
 		*posicaoAssembly += strlen("    sub\n");
 	} else {
