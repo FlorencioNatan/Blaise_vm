@@ -75,6 +75,7 @@ typedef enum {
 	TAN_FUNCTION,
 	TAN_CHAMADA_SUBROTINA,
 	TAN_EXIT,
+	TAN_BOOLEAN,
 } tipo_ast_node_t;
 
 typedef struct programa {
@@ -146,6 +147,7 @@ ast_node_t* criarNoFunction(char* nome, lista_t *parametros, lista_t *variaveis,
 ast_node_t* criarNoReal(double valor, int linha);
 ast_node_t* criarNoInteger(int valor, int linha);
 ast_node_t* criarNoChar(char valor, int linha);
+ast_node_t* criarNoBoolean(int valor, int linha);
 ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo, int linha);
 ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo, int linha);
 ast_node_t* criarNoVariavel(char* nomeVariavel, int linha);
