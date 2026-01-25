@@ -780,7 +780,7 @@ bool verificarTipoDaExpressao(mapa_t *tabela_simbolos, ast_node_t* expressao) {
 			}
 		}
 		if (lhsNode->tipo_dados != TIPO_PRIMITIVO_INTEGER && lhsNode->tipo_dados != TIPO_PRIMITIVO_REAL) {
-			imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, TIPO_PRIMITIVO_BOOLEAN);
+			imprimirMensagemDeErroDeTipo(lhsNode->linha, lhsNode->tipo_dados, TIPO_PRIMITIVO_INTEGER);
 			return false;
 		}
 		expressao->tipo_dados = lhsNode->tipo_dados;
