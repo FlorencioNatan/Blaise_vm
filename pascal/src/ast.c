@@ -1805,6 +1805,11 @@ void gerarAssemblyIf(
 	gerarAssemblyListaNoAst(tabela_simbolos, then_stmtLista, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
 	strcpy(buffer, "");
+	sprintf(buffer, "    jumpi fim_if_%d:\n", contadores->If);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	strcpy(buffer, "");
 	sprintf(buffer, "else_if_%d:\n", contadores->If);
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
