@@ -6,6 +6,8 @@
  #include "../lista.h"
  #include "../mapa.h"
  #include "../ast.h"
+ #include "../verificacao_de_tipos.h"
+ #include "../geracao_de_codigo.h"
  void yyerror(const char *msg);
 
 mapa_t *tabela_simbolos;
@@ -187,7 +189,7 @@ int main(int argc, char **argv) {
    }
    if (sucesso) {
        char* assembly = gerarAssembly(programa);
-       printf("Assembly do programa:\n\n\n\n%s", assembly);
+       printf("%s", assembly);
        free(assembly);
    }
    return 0;
