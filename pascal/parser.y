@@ -16,6 +16,7 @@ programa_t* programa;
 %union{
   double rval;
   int ival;
+  char* stringVal;
   char* identVal;
   programa_t* prog; // define the pointer type for custom data structure
   lista_t* lista;
@@ -30,10 +31,12 @@ programa_t* programa;
 %locations
 
 %start init
-%token MULTIPLICACAO DIVISAO MAIS MENOS IGUAL L_PAREN R_PAREN PONTO_E_VIRGULA PONTO DOIS_PONTOS VIRGULA DIFERENCA MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL WALRUS L_COLCH R_COLCH PONTO_PONTO
+%token MULTIPLICACAO DIVISAO MAIS MENOS IGUAL L_PAREN R_PAREN PONTO_E_VIRGULA PONTO DOIS_PONTOS VIRGULA DIFERENCA MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL WALRUS L_COLCH R_COLCH PONTO_PONTO APOSTROFO
 %token KW_PROGRAM KW_BEGIN KW_END KW_VAR KW_CHAR KW_BOOLEAN KW_INTEGER KW_REAL KW_STRING    KW_AND KW_OR KW_NOT KW_IF KW_THEN KW_ELSE KW_WHILE KW_DO KW_REPEAT KW_UNTIL KW_FOR KW_TO KW_DOWNTO KW_ARRAY KW_OF KW_PROCEDURE KW_FUNCTION KW_EXIT
 %token <rval> REAL
 %token <ival> INTEGER
+%token <stringVal> CHAR
+%token <stringVal> STRING
 %token <identVal> IDENTIFICADOR
 %token <asmVal> ASM
 %type <node> exp
@@ -141,6 +144,7 @@ exp_lista: exp                     { $$ = addNoASTNaLista($1, NULL); }
 
 exp:		REAL                  { $$ = criarNoReal($1, yylloc.first_line); }
 			| INTEGER             { $$ = criarNoInteger($1, yylloc.first_line); }
+			| CHAR                { $$ = criarNoChar($1[0], yylloc.first_line); }
 			| IDENTIFICADOR       { $$ = criarNoVariavel($1, yylloc.first_line); free($1); }
 			| IDENTIFICADOR L_COLCH exp R_COLCH       { $$ = criarNoAcessoArray($1, $3, yylloc.first_line); free($1); }
 			| chamada_subrotina   {$$ = $1;}

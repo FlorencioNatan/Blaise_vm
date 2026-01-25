@@ -214,6 +214,15 @@ ast_node_t* criarNoInteger(int valor, int linha) {
 	return no;
 }
 
+ast_node_t* criarNoChar(char valor, int linha) {
+	ast_node_t* no = malloc(sizeof(ast_node_t));
+	no->tipo = TAN_CHAR;
+	no->tipo_dados = TIPO_PRIMITIVO_CHAR;
+	no->valor.cVal = valor;
+	no->linha = linha;
+	return no;
+}
+
 ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo, int linha) {
 	ast_node_t* no = malloc(sizeof(ast_node_t));
 	no->tipo = tipo;
@@ -1031,6 +1040,9 @@ void printNoAST(ast_node_t* noAST, GVC_t *gvc, Agraph_t *g, Agnode_t *p) {
 		break;
 	case TAN_INTEGER:
 		sprintf(descricaoNoAST, "INTEGER: %d", noAST->valor.iVal);
+		break;
+	case TAN_CHAR:
+		sprintf(descricaoNoAST, "CHAR: %d", noAST->valor.cVal);
 		break;
 	case TAN_SOMA:
 		strcpy(descricaoNoAST, "SOMA");
@@ -2232,6 +2244,11 @@ void gerarAssemblyNoAst(
 		break;
 	case TAN_INTEGER:
 		sprintf(buffer, "    push %d\n", noAST->valor.iVal);
+		strcpy(&assembly[*posicaoAssembly], buffer);
+		*posicaoAssembly += strlen(buffer);
+		break;
+	case TAN_CHAR:
+		sprintf(buffer, "    push %d\n", noAST->valor.cVal);
 		strcpy(&assembly[*posicaoAssembly], buffer);
 		*posicaoAssembly += strlen(buffer);
 		break;

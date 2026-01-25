@@ -12,6 +12,7 @@ char *s;
 %option noyywrap
 %option yylineno
 %x ASSEMBLY
+%x STRING
 
 DIGIT    [0-9]
 LETTER    [a-zA-Z]
@@ -76,6 +77,10 @@ HEX_DIGIT    [0-9a-fA-F]
 <INITIAL>(?i:asm)       { BEGIN ASSEMBLY; s = buff; }
 <ASSEMBLY>(?i:end)      { BEGIN INITIAL; *s = '\0'; yylval.asmVal = buff; return ASM; }
 <ASSEMBLY>(.|"\n")             { *s++ = *yytext; }
+
+<INITIAL>(')       { BEGIN STRING; s = buff; }
+<STRING>(')        { BEGIN INITIAL; *s = '\0'; yylval.stringVal = buff; return strlen(buff) == 1 ? CHAR : STRING; }
+<STRING>(.|"\n")             { *s++ = *yytext; }
 
 [ \t\n]+         {/* ignore spaces */}
 

@@ -45,6 +45,7 @@ typedef enum {
 	TAN_PROGRAMA,
 	TAN_REAL,
 	TAN_INTEGER,
+	TAN_CHAR,
 	TAN_SOMA,
 	TAN_SUBTRACAO,
 	TAN_MULTIPLICACAO,
@@ -110,6 +111,7 @@ typedef struct function {
 typedef union {
 	char* strVal;
 	int iVal;
+	char cVal;
 	double dVal;
 	programa_t *varVal;
 	function_t *funVal;
@@ -143,6 +145,7 @@ ast_node_t* criarNoProcedure(char* nome, lista_t *parametros, lista_t *variaveis
 ast_node_t* criarNoFunction(char* nome, lista_t *parametros, lista_t *variaveis, lista_t *filhos, int tipo_retorno, int linha);
 ast_node_t* criarNoReal(double valor, int linha);
 ast_node_t* criarNoInteger(int valor, int linha);
+ast_node_t* criarNoChar(char valor, int linha);
 ast_node_t* criarNoBinario(ast_node_t* lhs, ast_node_t* rhs, tipo_ast_node_t tipo, int linha);
 ast_node_t* criarNoUnario(ast_node_t* op, tipo_ast_node_t tipo, int linha);
 ast_node_t* criarNoVariavel(char* nomeVariavel, int linha);
