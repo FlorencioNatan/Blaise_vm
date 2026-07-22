@@ -71,7 +71,7 @@ int le_int_da_memoria(bvm *vm, uint64_t endereco) {
 
 double le_double_da_memoria(bvm *vm, uint64_t endereco) {
     uint64_t valor = 0;
-    double *valorDouble = &valor;
+    double *valorDouble = (double*) &valor;
     for (uint64_t i = 64; i >= 8;i -= 8) {
         valor |= ((uint64_t) vm->memoria[endereco++]) << (64 - i);
     }
