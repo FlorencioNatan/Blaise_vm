@@ -12,6 +12,8 @@ typedef struct contadores {
 	int logico;
 } contadores_t;
 
+bool gerarInformacaoDebug = false;
+
 void gerarAssemblyNoAst(
 	mapa_t* tabela_simbolos,
 	ast_node_t* noAST,
@@ -30,6 +32,50 @@ void gerarAssemblyListaNoAst(
 	contadores_t *contadores
 );
 
+void gerarAssemblyDebugInicioDelimitadorLinha(ast_node_t* noAST, char *assembly, int *posicaoAssembly) {
+	if (!gerarInformacaoDebug) {
+		return;
+	}
+
+	char buffer[64] = "";
+	sprintf(buffer, "    dbglni %u\n", noAST->linha);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+}
+
+void gerarAssemblyDebugFimDelimitadorLinha(ast_node_t* noAST, char *assembly, int *posicaoAssembly) {
+	if (!gerarInformacaoDebug) {
+		return;
+	}
+
+	char buffer[64] = "";
+	sprintf(buffer, "    dbglnf %u\n", noAST->linha);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+}
+
+void gerarAssemblyInicioDebugVar(char *assembly, int *posicaoAssembly) {
+	if (!gerarInformacaoDebug) {
+		return;
+	}
+
+	char buffer[64] = "";
+	sprintf(buffer, "    dbgvari\n");
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+}
+
+void gerarAssemblyDebugVar(variavel_t *var, char *assembly, int *posicaoAssembly) {
+	if (!gerarInformacaoDebug) {
+		return;
+	}
+
+	char buffer[64] = "";
+	sprintf(buffer, "    dbgvar %s %d %d %d\n", var->nome, var->tipo, var->posicaoNaMemoria, var->comprimentoNaMemoria);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+}
+
 void gerarAssemblyAtribuicao(
 	mapa_t* tabela_simbolos,
 	ast_node_t* noAST,
@@ -47,6 +93,7 @@ void gerarAssemblyAtribuicao(
 
 	char buffer[256] = "";
 
+	gerarAssemblyDebugInicioDelimitadorLinha(lhsNode, assembly, posicaoAssembly);
 	gerarAssemblyNoAst(tabela_simbolos, rhsNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
 	strcpy(buffer, "");
@@ -73,6 +120,8 @@ void gerarAssemblyAtribuicao(
 	}
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
+
+	gerarAssemblyDebugFimDelimitadorLinha(lhsNode, assembly, posicaoAssembly);
 }
 
 void gerarAssemblyObterValorDaVariavel(
@@ -613,7 +662,10 @@ void gerarAssemblyIf(
 	sprintf(buffer, "# Começo do if %d\n", contadores->If);
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
+
+	gerarAssemblyDebugInicioDelimitadorLinha(condicaoNode, assembly, posicaoAssembly);
 	gerarAssemblyNoAst(tabela_simbolos, condicaoNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyDebugFimDelimitadorLinha(condicaoNode, assembly, posicaoAssembly);
 
 	strcpy(buffer, "");
 	sprintf(buffer, "    beqi else_if_%d\nthan_if_%d:\n", contadores->If, contadores->If);
@@ -659,7 +711,10 @@ void gerarAssemblyWhile(
 	sprintf(buffer, "inicio_while_%d:\n", contadores->While);
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
+
+	gerarAssemblyDebugInicioDelimitadorLinha(condicaoNode, assembly, posicaoAssembly);
 	gerarAssemblyNoAst(tabela_simbolos, condicaoNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyDebugFimDelimitadorLinha(condicaoNode, assembly, posicaoAssembly);
 
 	strcpy(buffer, "");
 	sprintf(buffer, "    beqi fim_while_%d\n", contadores->While);
@@ -697,7 +752,9 @@ void gerarAssemblyRepeat(
 
 	gerarAssemblyListaNoAst(tabela_simbolos, codigoLista, assembly, posicaoAssembly, comprimentoAssembly, contadores);
 
+	gerarAssemblyDebugInicioDelimitadorLinha(condicaoNode, assembly, posicaoAssembly);
 	gerarAssemblyNoAst(tabela_simbolos, condicaoNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyDebugFimDelimitadorLinha(condicaoNode, assembly, posicaoAssembly);
 
 	strcpy(buffer, "");
 	sprintf(buffer, "    bnei fim_repeat_%d\n    jumpi inicio_repeat_%d\n\nfim_repeat_%d:\n", contadores->Repeat, contadores->Repeat, contadores->Repeat);
@@ -728,7 +785,9 @@ void gerarAssemblyForTo(
 
 	char buffer[256] = "";
 
+	gerarAssemblyDebugInicioDelimitadorLinha(inicializacaoNode, assembly, posicaoAssembly);
 	gerarAssemblyNoAst(tabela_simbolos, inicializacaoNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyDebugFimDelimitadorLinha(inicializacaoNode, assembly, posicaoAssembly);
 
 	sprintf(buffer, "inicio_for_%d:\n", contadores->For);
 	strcpy(&assembly[*posicaoAssembly], buffer);
@@ -781,7 +840,9 @@ void gerarAssemblyForDownTo(
 
 	char buffer[256] = "";
 
+	gerarAssemblyDebugInicioDelimitadorLinha(inicializacaoNode, assembly, posicaoAssembly);
 	gerarAssemblyNoAst(tabela_simbolos, inicializacaoNode, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyDebugFimDelimitadorLinha(inicializacaoNode, assembly, posicaoAssembly);
 
 	sprintf(buffer, "inicio_for_%d:\n", contadores->For);
 	strcpy(&assembly[*posicaoAssembly], buffer);
@@ -908,7 +969,9 @@ void gerarAssemblyExit(
 	contadores_t *contadores
 ) {
 	ast_node_t* exp = noAST->filhos->valor.astNode;
+	gerarAssemblyDebugInicioDelimitadorLinha(exp, assembly, posicaoAssembly);
 	gerarAssemblyNoAst(tabela_simbolos, exp, assembly, posicaoAssembly, comprimentoAssembly, contadores);
+	gerarAssemblyDebugFimDelimitadorLinha(exp, assembly, posicaoAssembly);
 
 	char buffer[256] = "";
 
@@ -943,6 +1006,7 @@ void gerarAssemblyChamadaSubrotina(
 ) {
 	char buffer[256] = "", prefixo[10] = "function";
 
+	gerarAssemblyDebugInicioDelimitadorLinha(noAST, assembly, posicaoAssembly);
 	sprintf(buffer, "# Inicia a chamada à subrotina: %s\n", noAST->valor.strVal);
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
@@ -1015,6 +1079,7 @@ void gerarAssemblyChamadaSubrotina(
 	sprintf(buffer, "\n    calli %s_%s\n", prefixo, noAST->valor.strVal);
 	strcpy(&assembly[*posicaoAssembly], buffer);
 	*posicaoAssembly += strlen(buffer);
+	gerarAssemblyDebugFimDelimitadorLinha(noAST, assembly, posicaoAssembly);
 
 	int comprimento_parametros_stack = 0;
 	if (noAST->tipo_dados == TIPO_PRIMITIVO_NAO_PREENCHIDO) {
@@ -1193,7 +1258,54 @@ void salvarEnderecoRetornoNaStack(char *assembly, int *posicaoAssembly) {
 	*posicaoAssembly += strlen(buffer);
 }
 
-char* gerarAssembly(programa_t *programa) {
+void gerarAssemblyDebugVarDeclaracoes(lista_t *declaracoes, mapa_t *tabela_simbolos, char *assembly, int *posicaoAssembly) {
+	if (!gerarInformacaoDebug) {
+		return;
+	}
+
+	while(declaracoes != NULL) {
+		lista_t* variaveis = declaracoes->valor.astNode->filhos->valor.lista;
+			while(variaveis != NULL) {
+				char *nome = variaveis->valor.strVal;
+				variavel_t *var = buscarVariavelNoMapa(nome, tabela_simbolos);
+
+				gerarAssemblyDebugVar(var, assembly, posicaoAssembly);
+
+				variaveis = caudaDaLista(variaveis);
+			}
+		declaracoes = caudaDaLista(declaracoes);
+	}
+}
+
+void adicionarCodigoFonteNoAssembly(char *nomeArquivo, char* assembly, int *posicaoAssembly) {
+	if (!gerarInformacaoDebug) {
+		return;
+	}
+
+	char buffer[256];
+	sprintf(buffer, "\n.source %s\n", nomeArquivo);
+	strcpy(&assembly[*posicaoAssembly], buffer);
+	*posicaoAssembly += strlen(buffer);
+
+	FILE *arquivo = fopen(nomeArquivo, "r");
+	fseek(arquivo, 0, SEEK_END);
+	int tamanhoArquivoBytes = ftell(arquivo);
+	fseek(arquivo, 0, SEEK_SET);
+	char *codigo = malloc((tamanhoArquivoBytes+1) * sizeof(char));
+	char ch = fgetc(arquivo);
+	int i = 0;
+	do {
+		codigo[i++] = ch;
+		ch = fgetc(arquivo);
+	} while (ch != EOF);
+	fclose(arquivo);
+
+	strcpy(&assembly[*posicaoAssembly], codigo);
+	*posicaoAssembly += strlen(codigo);
+	free(codigo);
+}
+
+char* gerarAssembly(programa_t *programa, int argc, char **argv) {
 	if (programa == NULL) {
 		return NULL;
 	}
@@ -1218,6 +1330,10 @@ char* gerarAssembly(programa_t *programa) {
 	sprintf(buffer, "program_%s:\n", programa->nome);
 	strcpy(&assembly[posicaoAssembly], buffer);
 	posicaoAssembly += strlen(buffer);
+
+	gerarAssemblyInicioDebugVar(assembly, &posicaoAssembly);
+	gerarAssemblyDebugVarDeclaracoes(programa->variaveis, programa->tabela_simbolos, assembly, &posicaoAssembly);
+
 	gerarAssemblyListaNoAst(programa->tabela_simbolos, programa->filhos, assembly, &posicaoAssembly, &comprimentoAssembly, contadores);
 	strcpy(&assembly[posicaoAssembly], "    halt\n");
 	posicaoAssembly += strlen("    halt\n");
@@ -1227,22 +1343,29 @@ char* gerarAssembly(programa_t *programa) {
 		ast_node_t* noSubrotinas = subrotinas->valor.astNode;
 		lista_t* filhosSubrotina = NULL;
 		mapa_t* tabelaSimbolosSubRotinas = NULL;
+		lista_t* variaveisSubrotina = NULL;
 		int comprimentoMemoria = 0;
 		if (noSubrotinas->tipo == TAN_PROCEDURE) {
 			procedure_t *pro = noSubrotinas->valor.proVal;
 			filhosSubrotina = pro->filhos;
+			variaveisSubrotina = pro->variaveis;
 			tabelaSimbolosSubRotinas = pro->tabela_simbolos;
 			sprintf(buffer, "\nprocedure_%s:\n", pro->nome);
 			comprimentoMemoria = pro->comprimento_memoria_stack;
 		} else {
 			function_t *fun = noSubrotinas->valor.funVal;
 			filhosSubrotina = fun->filhos;
+			variaveisSubrotina = fun->variaveis;
 			tabelaSimbolosSubRotinas = fun->tabela_simbolos;
 			sprintf(buffer, "\nfunction_%s:\n", fun->nome);
 			comprimentoMemoria = fun->comprimento_memoria_stack;
 		}
 		strcpy(&assembly[posicaoAssembly], buffer);
 		posicaoAssembly += strlen(buffer);
+
+		gerarAssemblyInicioDebugVar(assembly, &posicaoAssembly);
+		gerarAssemblyDebugVarDeclaracoes(variaveisSubrotina, tabelaSimbolosSubRotinas, assembly, &posicaoAssembly);
+
 		salvarEnderecoRetornoNaStack(assembly, &posicaoAssembly);
 
 		sprintf(buffer, "# incrementa o stack pointer\n    push 0\n    lw\n    push %d\n    sub\n    push 0\n    sw\n\n", comprimentoMemoria);
@@ -1259,6 +1382,23 @@ char* gerarAssembly(programa_t *programa) {
 	int stack_pointer = frame_pointer - programa->comprimento_memoria_stack;
 	sprintf(buffer, "\n.data\n0 word 1 %d # stack pointer\n8 word 1 %d # frame pointer\n", stack_pointer, frame_pointer);
 	strcpy(&assembly[posicaoAssembly], buffer);
+	posicaoAssembly += strlen(buffer);
+
+
+	char nomeArquivo[256] = "";
+
+	for(int i = 1; i < argc; i++) {
+		if (strcmp(nomeArquivo, "") == 0 && argv[i][0] != '-') {
+			strcpy(nomeArquivo, argv[i]);
+			nomeArquivo[strlen(argv[i])] = '\0';
+		}
+
+		if (strcmp(argv[i], "-d") == 0) {
+			gerarInformacaoDebug = true;
+		}
+	}
+
+	adicionarCodigoFonteNoAssembly(nomeArquivo, assembly, &posicaoAssembly);
 
 	free(contadores);
 	return assembly;

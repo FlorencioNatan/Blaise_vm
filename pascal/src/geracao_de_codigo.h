@@ -18,6 +18,6 @@
 #define INICIO_MEMORIA_EXTENSAO 4998976
 #define FIM_MEMORIA_EXTENSAO 4999999
 
-char* gerarAssembly(programa_t *programa);
+char* gerarAssembly(programa_t *programa, int argc, char **argv);
 
 #endif /* GERACAO_DE_CODIGO_H */

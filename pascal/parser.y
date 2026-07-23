@@ -1,4 +1,4 @@
-/* calculator. */
+/* pascal. */
 %{
  #include <stdio.h>
  #include <stdlib.h>
@@ -175,8 +175,16 @@ exp:		REAL                  { $$ = criarNoReal($1, yylloc.first_line); }
 %%
 
 int main(int argc, char **argv) {
+   char nomeArquivo[256] = "";
    if (argc > 1) {
-      yyin = fopen(argv[1], "r");
+	  for(int i = 1; i < argc; i++) {
+		  if (strcmp(nomeArquivo, "") == 0 && argv[i][0] != '-') {
+			  strcpy(nomeArquivo, argv[i]);
+			  nomeArquivo[strlen(argv[i])] = '\0';
+		  }
+	  }
+
+      yyin = fopen(nomeArquivo, "r");
       if (yyin == NULL){
          printf("syntax: %s filename\n", argv[0]);
       }//end if
@@ -188,8 +196,24 @@ int main(int argc, char **argv) {
        sucesso = verificarTiposDoPrograma(programa);
    }
    if (sucesso) {
-       char* assembly = gerarAssembly(programa);
-       printf("%s", assembly);
+       char* assembly = gerarAssembly(programa, argc, argv);
+       if (strcmp(nomeArquivo, "") != 0) {
+            int comprimentoNomeArquivo = strlen(nomeArquivo) + 1;
+            char* nomeArquivoBass = malloc(comprimentoNomeArquivo+1);
+            strcpy(nomeArquivoBass, nomeArquivo);
+            strcpy(&nomeArquivoBass[comprimentoNomeArquivo-4], "bass");
+
+            FILE *arquivoBbvm = fopen(nomeArquivoBass, "w+");
+
+            if (arquivoBbvm == NULL) {
+                printf("Erro ao salvar arquivo de assembly");
+                return 0;
+            }
+
+            fwrite(assembly, strlen(assembly), 1, arquivoBbvm);
+
+            free(nomeArquivoBass);
+       }
        free(assembly);
    }
    return 0;
