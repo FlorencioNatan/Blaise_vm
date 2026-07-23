@@ -55,9 +55,19 @@ jump* montar_tabela_jumps(char *assembly, int totalJumps) {
         if (instrucao.tem_parametro) {
             strtok(NULL," \t\n,");
         }
+        if (strcmp(instrucao.cmd, "dbgvar") == 0) {
+    		strtok(NULL," \t\n,");
+    		strtok(NULL," \t\n,");
+    		strtok(NULL," \t\n,");
+    		strtok(NULL," \t\n,");
+        }
+        if (strcmp(instrucao.cmd, "dbglni") == 0 || strcmp(instrucao.cmd, "dbglnf") == 0) {
+    		strtok(NULL," \t\n,");
+        }
         posicaoPrograma += instrucao.tamanho;
         token = strtok (NULL," \t\n,");
     } while (token != NULL);
+
     free(assemblyCopy);
     return tabelaJumps;
 }

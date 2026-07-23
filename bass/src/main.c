@@ -6,17 +6,27 @@
 #include "instrucoes.h"
 #include "tabelaJump.h"
 
+
 #define CINCO_MB 5000000
 
 #define ESTADO_PROCESSAMANETO_INVALIDO 0
 #define ESTADO_PROCESSAMANETO_CODE     1
 #define ESTADO_PROCESSAMANETO_DATA     2
+#define ESTADO_PROCESSAMANETO_SOURCE   3
 #define TAMANHO_CABECALHO_BINARIO 12
+#define TAMANHO_CABECALHO_BINARIO_DEBUG 20
 #define TAMANHO_OFFSET_DATA 17
+#define TAMANHO_OFFSET_DATA_DEBUG 17
 
 int estadoProcessamento = ESTADO_PROCESSAMANETO_INVALIDO;
 int tamanhoCode = 0;
+int tamanhoData = 0;
+int tamanhoDebug = 0;
 int tamanhoArquivo = 0;
+int posicaoAtualEscopo = 0;
+int posicaoInicialMap = 0;
+bool gerarInformacaoDebug = false;
+
 uint8_t* conteudo;
 
 void calcular_tamanho_instrucao(
@@ -38,6 +48,31 @@ void calcular_tamanho_instrucao(
 
     if (instrucao.tem_parametro) {
         strtok(NULL," \t\n,");
+    }
+
+    if (instrucao.e_debug) {
+    	if (strcmp(instrucao.cmd, "dbgvar") == 0) {
+    		(*token) = strtok(NULL," \t\n,");
+    		if (gerarInformacaoDebug) {
+    			tamanhoArquivo += 18 + strlen((*token));
+    			tamanhoDebug += 18 + strlen((*token));
+    		}
+    		(*token) = strtok(NULL," \t\n,");
+    		(*token) = strtok(NULL," \t\n,");
+    		(*token) = strtok(NULL," \t\n,");
+    	}
+
+    	if (strcmp(instrucao.cmd, "dbglni") == 0) {
+    		(*token) = strtok(NULL," \t\n,");
+    	}
+
+		if (strcmp(instrucao.cmd, "dbglnf") == 0) {
+    		(*token) = strtok(NULL," \t\n,");
+    		if (gerarInformacaoDebug) {
+    			tamanhoArquivo += 13;
+    			tamanhoDebug += 13;
+    		}
+		}
     }
 
     (*token) = strtok(NULL," \t\n,");
@@ -66,8 +101,8 @@ void calcular_tamanho_data(
         } else if (strcmp(tipo, "quar") == 0) {
             tamanhoTipo = 2;
         }
-
-        tamanhoArquivo += (quantidade * tamanhoTipo) + TAMANHO_OFFSET_DATA;
+        tamanhoArquivo += (quantidade * tamanhoTipo) + (gerarInformacaoDebug ? TAMANHO_OFFSET_DATA_DEBUG : TAMANHO_OFFSET_DATA);
+        tamanhoData += (quantidade * tamanhoTipo) + (gerarInformacaoDebug ? TAMANHO_OFFSET_DATA_DEBUG : TAMANHO_OFFSET_DATA);
 
         for (int i = 0; i < quantidade; i++) {
             (*token) = strtok (NULL," \t\n,");
@@ -78,10 +113,12 @@ void calcular_tamanho_data(
 
     if (strcmp(tipo, "strc") == 0) {
         tamanhoArquivo += 1;
+        tamanhoData += 1;
     }
 
     (*token) = strtok (NULL,"\"");
-    tamanhoArquivo += strlen((*token)) + TAMANHO_OFFSET_DATA;
+    tamanhoArquivo += strlen((*token)) + (gerarInformacaoDebug ? TAMANHO_OFFSET_DATA_DEBUG : TAMANHO_OFFSET_DATA);
+    tamanhoData +=  strlen((*token)) + (gerarInformacaoDebug ? TAMANHO_OFFSET_DATA_DEBUG : TAMANHO_OFFSET_DATA);
     (*token) = strtok (NULL," \t\n,");
 }
 
@@ -106,9 +143,22 @@ void calcular_tamanho_arquivo(
             continue;
         }
 
+        if (strcmp(token, ".source") == 0) {
+            estadoProcessamento = ESTADO_PROCESSAMANETO_SOURCE;
+            token = strtok(NULL," \t\n,");
+            break;
+        }
+
         calcular_tamanho_instrucao(totalJumps, &token);
         calcular_tamanho_data(&token);
     } while (token != NULL);
+
+    if (gerarInformacaoDebug) {
+    	char* source = strstr(assembly, ".source");
+    	int comprimentoCodigo = strlen(source) +1;
+    	tamanhoArquivo += comprimentoCodigo;
+    }
+
     estadoProcessamento = ESTADO_PROCESSAMANETO_INVALIDO;
     free(assemblyCopy);
 }
@@ -166,7 +216,8 @@ void processar_token_code(
     jump *tabelaJumps,
     int totalJumps,
     uint8_t* conteudo,
-    int *indiceConteudo
+    int *indiceConteudo,
+	int *indexConteudoDebug
 ){
     if (estadoProcessamento != ESTADO_PROCESSAMANETO_CODE) {
         return;
@@ -177,6 +228,60 @@ void processar_token_code(
     }
 
     registroInstrucao instrucao = lookup_instrucao(token);
+
+    if (instrucao.e_debug) {
+    	if (strcmp(instrucao.cmd, "dbgvari") == 0) {
+    		posicaoAtualEscopo = *indiceConteudo - (gerarInformacaoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO);
+    	}
+
+    	if (strcmp(instrucao.cmd, "dbgvar") == 0) {
+    		token = strtok(NULL, " \t\n,");
+    		char* nome = malloc(strlen(token) * sizeof(char) + 1);
+    		strcpy(nome, token);
+    		nome[strlen(token)] = '\0';
+        	token = strtok(NULL, " \t\n,");
+        	int tipo = strtol(token, NULL, 0);
+        	token = strtok(NULL, " \t\n,");
+        	uint32_t posicaoNaMemoria = strtol(token, NULL, 0);
+        	token = strtok(NULL, " \t\n,");
+        	uint32_t comprimentoNaMemoria = strtol(token, NULL, 0);
+        	uint32_t posInicialEscopo = posicaoAtualEscopo;
+
+        	if (!gerarInformacaoDebug) {
+        		return;
+        	}
+        	conteudo[(*indexConteudoDebug)++] = instrucao.codigo;
+        	for (int i = 0; i < strlen(nome); i++) {
+        		conteudo[(*indexConteudoDebug)++] = nome[i];
+        	}
+        	conteudo[(*indexConteudoDebug)++] = '\0';
+        	insere_uint32_t_no_conteudo(conteudo, indexConteudoDebug, tipo);
+        	insere_uint32_t_no_conteudo(conteudo, indexConteudoDebug, posicaoNaMemoria);
+        	insere_uint32_t_no_conteudo(conteudo, indexConteudoDebug, comprimentoNaMemoria);
+        	insere_uint32_t_no_conteudo(conteudo, indexConteudoDebug, posInicialEscopo);
+    	}
+
+    	if (strcmp(instrucao.cmd, "dbglni") == 0) {
+    		token = strtok(NULL, " \t\n,");
+    		posicaoInicialMap = *indiceConteudo - (gerarInformacaoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO);
+    	}
+
+		if (strcmp(instrucao.cmd, "dbglnf") == 0) {
+			token = strtok(NULL, " \t\n,");
+			uint32_t linhaSource = strtol(token, NULL, 0);
+			uint32_t posInicialAssembly = posicaoInicialMap;
+			uint32_t posFinalAssembly = *indiceConteudo - (gerarInformacaoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO);
+
+        	if (!gerarInformacaoDebug) {
+        		return;
+        	}
+			conteudo[(*indexConteudoDebug)++] = instrucao.codigo;
+        	insere_uint32_t_no_conteudo(conteudo, indexConteudoDebug, linhaSource);
+        	insere_uint32_t_no_conteudo(conteudo, indexConteudoDebug, posInicialAssembly);
+        	insere_uint32_t_no_conteudo(conteudo, indexConteudoDebug, posFinalAssembly);
+		}
+		return;
+    }
 
     if (!instrucao.tem_parametro) {
         conteudo[(*indiceConteudo)++] = instrucao.codigo;
@@ -313,7 +418,8 @@ void processar_token(
     jump *tabelaJumps,
     int totalJumps,
     uint8_t* conteudo,
-    int *indiceConteudo
+    int *indiceConteudo,
+	int *indexConteudoDebug
 ){
     if (token == NULL) {
         return;
@@ -321,13 +427,19 @@ void processar_token(
 
     if (strcmp(token, ".code") == 0) {
         estadoProcessamento = ESTADO_PROCESSAMANETO_CODE;
-        *indiceConteudo = TAMANHO_CABECALHO_BINARIO;
+        *indiceConteudo = (gerarInformacaoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO);
+        *indexConteudoDebug = tamanhoData + tamanhoCode + (gerarInformacaoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO);
         return;
     }
 
     if (strcmp(token, ".data") == 0) {
         estadoProcessamento = ESTADO_PROCESSAMANETO_DATA;
-        *indiceConteudo = tamanhoCode + TAMANHO_CABECALHO_BINARIO;
+        *indiceConteudo = tamanhoCode + (gerarInformacaoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO);
+        return;
+    }
+
+    if (strcmp(token, ".source") == 0) {
+        estadoProcessamento = ESTADO_PROCESSAMANETO_SOURCE;
         return;
     }
 
@@ -336,7 +448,8 @@ void processar_token(
         tabelaJumps,
         totalJumps,
         conteudo,
-        indiceConteudo
+        indiceConteudo,
+		indexConteudoDebug
     );
 
     processar_token_data(
@@ -354,25 +467,47 @@ uint8_t* gerar_conteudo_binario(
     uint8_t *conteudo = malloc(tamanhoArquivo*sizeof(uint8_t));
     char *token;
     int indexConteudo = 4;
+    int indexConteudoDebug = 0;
     conteudo[0] = 'b';
     conteudo[1] = 'v';
     conteudo[2] = 'm';
     conteudo[3] = 0x01;
+    if (gerarInformacaoDebug) {
+    	conteudo[3] = 0xFF;
+    }
 
     insere_uint32_t_no_conteudo(conteudo, &indexConteudo, tamanhoArquivo);
     insere_uint32_t_no_conteudo(conteudo, &indexConteudo, tamanhoCode);
 
-    token = strtok (assembly," \t\n,");
+    if (gerarInformacaoDebug) {
+    	insere_uint32_t_no_conteudo(conteudo, &indexConteudo, tamanhoData);
+    	insere_uint32_t_no_conteudo(conteudo, &indexConteudo, tamanhoDebug);
+    	indexConteudoDebug = indexConteudo;
+    }
+
+    char *assemblyCopy = malloc(strlen(assembly)+1);
+    strcpy(assemblyCopy, assembly);
+    token = strtok (assemblyCopy," \t\n,");
     do {
         processar_token(
             token,
             tabelaJumps,
             totalJumps,
             conteudo,
-            &indexConteudo
+            &indexConteudo,
+			&indexConteudoDebug
         );
         token = strtok (NULL," \t\n,");
     } while(token != NULL);
+
+    if (gerarInformacaoDebug) {
+		char* source = strstr(assembly, ".source");
+		int inicioSessaoSource = tamanhoArquivo - strlen(source) - 1;
+		for(size_t i = 0; i < strlen(source); i++) {
+			conteudo[inicioSessaoSource + i] = source[i];
+		}
+		conteudo[tamanhoArquivo - 1] = '\0';
+    }
 
     return conteudo;
 }
@@ -416,7 +551,7 @@ uint8_t* processar_arquivo_assembly(
     assembly[indiceAssembly-1] = '\0';
 
     int totalJumps = 0;
-    tamanhoArquivo = TAMANHO_CABECALHO_BINARIO;
+    tamanhoArquivo = (gerarInformacaoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO);
     calcular_tamanho_arquivo(assembly, &totalJumps);
 
     jump *tabelaJumps = montar_tabela_jumps(assembly, totalJumps);
@@ -467,12 +602,25 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    char nomeArquivo[256] = "";
+
+    for(int i = 1; i < argc; i++) {
+    	if (strcmp(nomeArquivo, "") == 0 && argv[i][0] != '-') {
+    		strcpy(nomeArquivo, argv[i]);
+    		nomeArquivo[strlen(argv[i])] = '\0';
+    	}
+
+    	if (strcmp(argv[i], "-d") == 0) {
+    		gerarInformacaoDebug = true;
+    	}
+    }
+
     tamanhoArquivo = 0;
-    uint8_t* conteudo = processar_arquivo_assembly(argv[1]);
+    uint8_t* conteudo = processar_arquivo_assembly(nomeArquivo);
     if (tamanhoArquivo == 0 && conteudo == NULL ) {
         return 1;
     }
-    escrever_arquivo_binario(argv[1], conteudo, tamanhoArquivo);
+    escrever_arquivo_binario(nomeArquivo, conteudo, tamanhoArquivo);
 
     free(conteudo);
 }

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define QUANTIDADE_INSTRUCOES 57
+#define QUANTIDADE_INSTRUCOES 61
 
 #define INST_NOP  0x00
 #define INST_HALT 0x01
@@ -55,6 +55,13 @@
 #define INST_LB   0x27
 
 #define INST_EXT  0x28
+
+#define INST_DBGLNI   0xd0
+#define INST_DBGLNF   0xd1
+#define INST_DBGVARI  0xd2
+#define INST_DBGVAR   0xd3
+
+
 
 #define INST_CMD_NOP  "nop"
 #define INST_CMD_HALT "halt"
@@ -126,13 +133,21 @@
 #define INST_CMD_LQI   "lqi"
 #define INST_CMD_LBI   "lbi"
 
+#define INST_CMD_DBGLNI   "dbglni"
+#define INST_CMD_DBGLNF   "dbglnf"
+#define INST_CMD_DBGVARI  "dbgvari"
+#define INST_CMD_DBGVAR   "dbgvar"
+
+
+
 typedef struct registroInstrucao {
-    char* cmd;
-    uint8_t codigo;
-    bool tem_parametro;
-    uint8_t tamanho;
+	char *cmd;
+	uint8_t codigo;
+	bool tem_parametro;
+	bool e_debug;
+	uint8_t tamanho;
 } registroInstrucao;
 
-registroInstrucao lookup_instrucao(char* instrucao);
+registroInstrucao lookup_instrucao(char *instrucao);
 
 #endif /* INSTRUCOES_H */
