@@ -6,6 +6,9 @@ C_FILES := $(wildcard src/flex_bison/*.c src/*.c)
 OBJS := $(patsubst %.c, %.o, $(C_FILES))
 LEXER := src/flex_bison/lexer.c
 PARSER := src/flex_bison/parser.c
+TESTE_FILE = teste.pas
+OUTPUT_TESTE_FILE = teste.bass
+BASS_DIRECTORY = ../bass/
 
 $(PROGRAM): $(PARSER) $(LEXER) $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o build/$(PROGRAM) $(CLIBS)
@@ -18,7 +21,12 @@ $(LEXER): lexer.l
 	sed -i '24i int fileno(FILE *stream);' src/flex_bison/lexer.c 
 
 run:
-	./build/pascal teste.pas
+	./build/pascal $(TESTE_FILE)
+	cp $(OUTPUT_TESTE_FILE) $(BASS_DIRECTORY)
+
+run_debug:
+	./build/pascal -d $(TESTE_FILE)
+	cp $(OUTPUT_TESTE_FILE) $(BASS_DIRECTORY)
 
 clean:
 	rm $(LEXER) src/flex_bison/lexer.h
