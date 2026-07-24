@@ -1,9 +1,95 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
 #include "bvm.h"
 #include "instrucoes.h"
 #include "ext.h"
+#include "../../misc/auxiliar/funcoes_binarias_para_buffer.h"
+
+void ler_programa_do_arquivo_binario(char* nomeArquivoBbvm, bvm *vm) {
+    FILE *arquivoBbvm = fopen(nomeArquivoBbvm, "r");
+    fseek(arquivoBbvm, 0, SEEK_END);
+    int tamanhoArquivoBytes = ftell(arquivoBbvm);
+    bool modoDebug = false;
+
+    if (tamanhoArquivoBytes > CINCO_MB) {
+        printf("O tamanho máximo do arquivo de assembly suportado é 5MB.");
+        vm->programa = malloc(sizeof(uint8_t));
+        vm->programa[0] = INST_HALT;
+        return;
+    }
+    fseek(arquivoBbvm, 0, SEEK_SET);
+
+    uint8_t buffer[tamanhoArquivoBytes + 1];
+
+    if (arquivoBbvm == NULL) {
+        printf("Não foi possível abrir o arquivo: %s!\n", nomeArquivoBbvm);
+        return;
+    }
+
+    fread(buffer, sizeof(buffer), 1, arquivoBbvm);
+    if (!(strncmp((char*)buffer, "bvm", 3) == 0 && (buffer[3] == VERSAO_ATUAL || buffer[3] == VERSAO_DEBUG))) {
+        printf("Programa inválido\n");
+        return;
+    }
+
+    modoDebug = buffer[3] == VERSAO_DEBUG;
+
+    uint32_t tamanhoPrograma = ler_uint32_t(buffer, POSICAO_TAMANHO_PROGRAMA);
+
+    vm->tam_programa = tamanhoPrograma;
+    vm->programa = malloc(sizeof(uint8_t)*tamanhoPrograma);
+    for (uint32_t i = 0; i < tamanhoPrograma; i++) {
+        vm->programa[i] = buffer[i + (modoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO)];
+    }
+
+    uint32_t tamanhoArquivo = ler_uint32_t(buffer, POSICAO_TAMANHO_ARQUIVO);
+    uint32_t inicioSecaoData = (modoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO) + tamanhoPrograma;
+    uint32_t fimSessaoData = tamanhoArquivo;
+    if (modoDebug) {
+        fimSessaoData = inicioSecaoData + ler_uint32_t(buffer, POSICAO_TAMANHO_DATA);
+    }
+
+    if (fimSessaoData == inicioSecaoData) {
+        return;
+    }
+
+    uint32_t i = inicioSecaoData;
+    do {
+        uint64_t endereco = ler_uint64_t(buffer, i);
+        i += 8;
+        uint8_t tipo = buffer[i++];
+        uint64_t tamanho = ler_uint64_t(buffer, i);
+        i += 8;
+
+        for (uint32_t j = 0; j < tamanho; j++) {
+            if (tipo == TIPO_DADO_64_BITS) {
+                uint64_t valor = ler_uint64_t(buffer, i);
+                escreve_uint64_t_na_memoria(vm, endereco, valor);
+                endereco += 8;
+                i += 8;
+            } else if(tipo == TIPO_DADO_32_BITS) {
+                uint32_t valor = ler_uint32_t(buffer, i);
+                escreve_uint32_t_na_memoria(vm, endereco, valor);
+                endereco += 4;
+                i += 4;
+            } else if(tipo == TIPO_DADO_16_BITS) {
+                uint16_t valor = ler_uint16_t(buffer, i);
+                escreve_uint16_t_na_memoria(vm, endereco, valor);
+                endereco += 2;
+                i += 2;
+            } else {
+                uint8_t valor = buffer[i];
+                vm->memoria[endereco] = valor;
+                endereco += 1;
+                i += 1;
+            }
+        }
+    } while (i < fimSessaoData);
+    fclose(arquivoBbvm);
+}
 
 void escreve_uint64_t_na_memoria(bvm *vm, uint64_t endereco, uint64_t valor) {
     uint8_t *bytesValor = (uint8_t*)&valor;

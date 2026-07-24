@@ -3,6 +3,16 @@
 
 #include <stdint.h>
 
+#define CINCO_MB 5000000
+#define POSICAO_TAMANHO_ARQUIVO 4
+#define POSICAO_TAMANHO_PROGRAMA 8
+#define POSICAO_TAMANHO_DATA 12
+#define TAMANHO_CABECALHO_BINARIO 12
+#define TAMANHO_CABECALHO_BINARIO_DEBUG 20
+
+#define VERSAO_ATUAL 1
+#define VERSAO_DEBUG 0xFF
+
 #define MAX_TAM_PILHA 64
 #define MAX_TAM_MEMORIA 5000000 // 5MB
 #define TIPO_DADO_64_BITS 8
@@ -32,6 +42,7 @@ typedef struct bvm {
     uint8_t halt;
 } bvm;
 
+void ler_programa_do_arquivo_binario(char* nomeArquivoBbvm, bvm *vm);
 int processar_instrucoes(bvm *vm);
 void escreve_uint64_t_na_memoria(bvm *vm, uint64_t endereco, uint64_t valor);
 void escreve_uint32_t_na_memoria(bvm *vm, uint64_t endereco, uint32_t valor);
