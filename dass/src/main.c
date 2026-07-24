@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include "cstrings.h"
 #include "instrucoes.h"
 
@@ -9,10 +10,14 @@
 #define POSICAO_TAMANHO_ARQUIVO 4
 #define POSICAO_TAMANHO_PROGRAMA 8
 #define TAMANHO_CABECALHO_BINARIO 12
+#define POSICAO_TAMANHO_DATA 12
+#define TAMANHO_CABECALHO_BINARIO_DEBUG 20
 #define TIPO_DADO_64_BITS 8
 #define TIPO_DADO_32_BITS 4
 #define TIPO_DADO_16_BITS 2
 #define TIPO_DADO_8_BITS 1
+
+bool modoDebug = false;
 
 uint64_t ler_uint64_t(uint8_t *buffer, int indiceBuffer) {
     uint64_t tamanhoPrograma = 0;
@@ -57,10 +62,12 @@ cstrings_t* ler_programa_do_arquivo_binario(char* nomeArquivoBbvm) {
 
     fread(buffer, sizeof(buffer), 1, arquivoBbvm);
     fclose(arquivoBbvm);
-    if (!(strncmp((char*)buffer, "bvm", 3) == 0 && buffer[3] == 1)) {
+    if (!(strncmp((char*)buffer, "bvm", 3) == 0 && (buffer[3] == 1 || buffer[3] == 0xFF))) {
         printf("Programa inválido\n");
         return NULL;
     }
+
+    modoDebug = buffer[3] == 0xFF;
 
     cstrings_t* assembly = appendToCstrings_t(NULL, ".code\n");
 
@@ -68,7 +75,7 @@ cstrings_t* ler_programa_do_arquivo_binario(char* nomeArquivoBbvm) {
     uint32_t tam_programa = tamanhoPrograma;
     uint32_t i = 0;
     while (i < tamanhoPrograma) {
-        uint8_t instrucao = buffer[i + TAMANHO_CABECALHO_BINARIO];
+        uint8_t instrucao = buffer[i + (modoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO)];
         switch (instrucao) {
             case INST_NOP:
                 appendToCstrings_t(assembly, "\tnop\n");
@@ -78,7 +85,7 @@ cstrings_t* ler_programa_do_arquivo_binario(char* nomeArquivoBbvm) {
                 break;
             case INST_PUSH:
                 appendToCstrings_t(assembly, "\tpush ");
-                uint64_t word = ler_uint64_t(buffer, i + 1 + TAMANHO_CABECALHO_BINARIO);
+                uint64_t word = ler_uint64_t(buffer, i + 1 + (modoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO));
                 i += 8;
                 char str_word[64];
                 sprintf(str_word, "%lu\n", word);
@@ -203,7 +210,11 @@ cstrings_t* ler_programa_do_arquivo_binario(char* nomeArquivoBbvm) {
     }
 
     uint32_t tamanhoArquivo = ler_uint32_t(buffer, POSICAO_TAMANHO_ARQUIVO);
-    uint32_t inicioSecaoData = TAMANHO_CABECALHO_BINARIO + tamanhoPrograma;
+    uint32_t inicioSecaoData = (modoDebug ? TAMANHO_CABECALHO_BINARIO_DEBUG : TAMANHO_CABECALHO_BINARIO) + tamanhoPrograma;
+    uint32_t fimSessaoData = tamanhoArquivo;
+    if (modoDebug) {
+        fimSessaoData = inicioSecaoData + ler_uint32_t(buffer, POSICAO_TAMANHO_DATA);
+    }
 
     if (tamanhoArquivo == inicioSecaoData) {
         return assembly;
@@ -259,7 +270,7 @@ cstrings_t* ler_programa_do_arquivo_binario(char* nomeArquivoBbvm) {
             appendToCstrings_t(assembly, str_buffer);
         }
         appendToCstrings_t(assembly, "\n");
-    } while (i < tamanhoArquivo);
+    } while (i < fimSessaoData);
 
     return assembly;
 }
