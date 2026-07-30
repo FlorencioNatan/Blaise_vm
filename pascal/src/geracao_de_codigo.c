@@ -1311,6 +1311,7 @@ char* gerarAssembly(programa_t *programa, int argc, char **argv) {
 	}
 
 	char *assembly;
+	char nomeArquivo[256] = "";
 	int comprimentoAssembly = 5000000;
 	int posicaoAssembly = 0;
 	contadores_t *contadores = malloc(sizeof(contadores_t));
@@ -1321,6 +1322,17 @@ char* gerarAssembly(programa_t *programa, int argc, char **argv) {
 	contadores->While = 0;
 	contadores->comparacao = 0;
 	contadores->logico = 0;
+
+	for(int i = 1; i < argc; i++) {
+		if (strcmp(nomeArquivo, "") == 0 && argv[i][0] != '-') {
+			strcpy(nomeArquivo, argv[i]);
+			nomeArquivo[strlen(argv[i])] = '\0';
+		}
+
+		if (strcmp(argv[i], "-d") == 0) {
+			gerarInformacaoDebug = true;
+		}
+	}
 
 	assembly = malloc(sizeof(char) * comprimentoAssembly);
 	sprintf(assembly, "# Programa: %s\n.code\n", programa->nome);
@@ -1383,20 +1395,6 @@ char* gerarAssembly(programa_t *programa, int argc, char **argv) {
 	sprintf(buffer, "\n.data\n0 word 1 %d # stack pointer\n8 word 1 %d # frame pointer\n", stack_pointer, frame_pointer);
 	strcpy(&assembly[posicaoAssembly], buffer);
 	posicaoAssembly += strlen(buffer);
-
-
-	char nomeArquivo[256] = "";
-
-	for(int i = 1; i < argc; i++) {
-		if (strcmp(nomeArquivo, "") == 0 && argv[i][0] != '-') {
-			strcpy(nomeArquivo, argv[i]);
-			nomeArquivo[strlen(argv[i])] = '\0';
-		}
-
-		if (strcmp(argv[i], "-d") == 0) {
-			gerarInformacaoDebug = true;
-		}
-	}
 
 	adicionarCodigoFonteNoAssembly(nomeArquivo, assembly, &posicaoAssembly);
 
