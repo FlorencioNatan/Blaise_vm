@@ -8,6 +8,88 @@
 #include "ext.h"
 #include "../../misc/auxiliar/funcoes_binarias_para_buffer.h"
 
+uint32_t le_uint32_t_do_conteudo(
+    uint8_t* conteudo,
+    uint32_t *indiceConteudo
+) {
+    uint32_t valor = 0;
+    for (uint64_t i = 32; i >= 8;i -= 8) {
+        valor |= ((uint64_t) conteudo[(*indiceConteudo)++]) << (32 - i);
+    }
+    return valor;
+}
+
+void le_informacoes_de_debug_do_programa(uint8_t *buffer, bvm *vm) {
+    if (buffer[3] != VERSAO_DEBUG) {
+		return;
+	}
+
+	uint32_t tamanhoArquivo = ler_uint32_t(buffer, POSICAO_TAMANHO_ARQUIVO);
+	uint32_t tamanhoPrograma = ler_uint32_t(buffer, POSICAO_TAMANHO_PROGRAMA);
+	uint32_t tamanhoData = ler_uint32_t(buffer, POSICAO_TAMANHO_DATA);
+	uint32_t tamanhoDebug = ler_uint32_t(buffer, POSICAO_TAMANHO_DEBUG);
+	uint32_t inicioConteudoDebug = TAMANHO_CABECALHO_BINARIO_DEBUG + tamanhoPrograma + tamanhoData;
+	uint32_t fimConteudoDebug = inicioConteudoDebug + tamanhoDebug;
+
+	vm->tam_sourceMap = 0;
+	vm->qtd_varivaies = 0;
+
+	for (uint32_t i = inicioConteudoDebug; i <= fimConteudoDebug;) {
+		uint8_t comando = buffer[i++];
+		if (comando == INST_DBGVAR) {
+			vm->qtd_varivaies++;
+			while (buffer[i] != '\0') {
+				i++;
+			}
+
+			for (uint32_t i = 0; i < 4; i++) {
+				le_uint32_t_do_conteudo(buffer, &i);
+			}
+		}
+
+		if (comando == INST_DBGLNF) {
+			vm->tam_sourceMap++;
+			le_uint32_t_do_conteudo(buffer, &i);
+			le_uint32_t_do_conteudo(buffer, &i);
+			le_uint32_t_do_conteudo(buffer, &i);
+		}
+	}
+
+	vm->sourceMaps = malloc(sizeof(sourceMap_t) * vm->tam_sourceMap);
+	vm->variaveis = malloc(sizeof(contextoVariavel_t) * vm->qtd_varivaies);
+	uint32_t indiceSourceMap = 0;
+	uint32_t indiceVariaveis = 0;
+
+	for (uint32_t i = inicioConteudoDebug; i <= fimConteudoDebug;) {
+		uint8_t comando = buffer[i++];
+		if (comando == INST_DBGVAR) {
+			char nomeVar[256] = "";
+			int j = 0;
+			while (buffer[i] != '\0') {
+				nomeVar[j++] = buffer[i];
+				i++;
+			}
+			i++;
+
+			vm->variaveis[indiceVariaveis].nome = malloc(sizeof(char) * strlen(nomeVar) + 1);
+			strcpy(vm->variaveis[indiceVariaveis].nome, nomeVar);
+			vm->variaveis[indiceVariaveis].nome[strlen(nomeVar)] = '\0';
+			vm->variaveis[indiceVariaveis].tipo = le_uint32_t_do_conteudo(buffer, &i);
+			vm->variaveis[indiceVariaveis].posicaoNaMemoria = le_uint32_t_do_conteudo(buffer, &i);
+			vm->variaveis[indiceVariaveis].comprimentoNaMemoria = le_uint32_t_do_conteudo(buffer, &i);
+			vm->variaveis[indiceVariaveis].posInicialEscopo = le_uint32_t_do_conteudo(buffer, &i);
+			indiceVariaveis++;
+		}
+
+		if (comando == INST_DBGLNF) {
+			vm->sourceMaps[indiceSourceMap].linhaSource = le_uint32_t_do_conteudo(buffer, &i);
+			vm->sourceMaps[indiceSourceMap].posInicialAssembly = le_uint32_t_do_conteudo(buffer, &i);
+			vm->sourceMaps[indiceSourceMap].posFinalAssembly = le_uint32_t_do_conteudo(buffer, &i);
+			indiceSourceMap++;
+		}
+	}
+}
+
 void ler_programa_do_arquivo_binario(char* nomeArquivoBbvm, bvm *vm) {
     FILE *arquivoBbvm = fopen(nomeArquivoBbvm, "r");
     fseek(arquivoBbvm, 0, SEEK_END);
@@ -88,6 +170,9 @@ void ler_programa_do_arquivo_binario(char* nomeArquivoBbvm, bvm *vm) {
             }
         }
     } while (i < fimSessaoData);
+
+	le_informacoes_de_debug_do_programa(buffer, vm);
+
     fclose(arquivoBbvm);
 }
 

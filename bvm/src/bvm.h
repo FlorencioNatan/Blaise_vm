@@ -7,6 +7,7 @@
 #define POSICAO_TAMANHO_ARQUIVO 4
 #define POSICAO_TAMANHO_PROGRAMA 8
 #define POSICAO_TAMANHO_DATA 12
+#define POSICAO_TAMANHO_DEBUG 16
 #define TAMANHO_CABECALHO_BINARIO 12
 #define TAMANHO_CABECALHO_BINARIO_DEBUG 20
 
@@ -29,6 +30,21 @@
 #define EXEC_ERRO_EXTENSAO_NAO_EXISTE 6
 #define EXEC_ERRO_TAMANHO_MEMORIA_PEQUENO_PARA_EXTENSAO 7
 
+
+typedef struct sourceMap_t {
+    uint32_t linhaSource;
+    uint32_t posInicialAssembly;
+    uint32_t posFinalAssembly;
+} sourceMap_t;
+
+typedef struct contextoVariavel_t {
+    char* nome;
+    uint32_t tipo;
+    uint32_t posicaoNaMemoria;
+    uint32_t comprimentoNaMemoria;
+    uint32_t posInicialEscopo;
+} contextoVariavel_t;
+
 typedef struct bvm {
     uint64_t pc;
 
@@ -40,6 +56,14 @@ typedef struct bvm {
 
     uint8_t memoria[MAX_TAM_MEMORIA];
     uint8_t halt;
+
+    // Informações de Debug
+	char **source;
+    uint64_t tam_source;
+	sourceMap_t* sourceMaps;
+    uint64_t tam_sourceMap;
+	contextoVariavel_t* variaveis;
+    uint64_t qtd_varivaies;
 } bvm;
 
 void ler_programa_do_arquivo_binario(char* nomeArquivoBbvm, bvm *vm);

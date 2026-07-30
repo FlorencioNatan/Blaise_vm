@@ -1,10 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "bvm.h"
-#include "instrucoes.h"
-#include "../../misc/auxiliar/funcoes_binarias_para_buffer.h"
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -58,4 +55,7 @@ int main(int argc, char* argv[]) {
                 break;
         }
     }
+
+	free(vm.variaveis);
+	free(vm.sourceMaps);
 }

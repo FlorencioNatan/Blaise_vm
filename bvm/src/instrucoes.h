@@ -51,4 +51,9 @@
 
 #define INST_EXT  0x28
 
+#define INST_DBGLNI   0xd0
+#define INST_DBGLNF   0xd1
+#define INST_DBGVARI  0xd2
+#define INST_DBGVAR   0xd3
+
 #endif /* INSTRUCOES_H */
