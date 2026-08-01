@@ -8,6 +8,7 @@ TESTE_FILE = teste.bass
 OUTPUT_TESTE_FILE = teste.bbvm
 BVM_DIRECTORY = ../bvm/
 DASS_DIRECTORY = ../dass/
+BDB_DIRECTORY = ../bdb/
 
 
 all: $(PROGRAM)
@@ -19,11 +20,13 @@ run: build/$(PROGRAM)
 	./build/$(PROGRAM) $(TESTE_FILE)
 	cp $(OUTPUT_TESTE_FILE) $(BVM_DIRECTORY)
 	cp $(OUTPUT_TESTE_FILE) $(DASS_DIRECTORY)
+	cp $(OUTPUT_TESTE_FILE) $(BDB_DIRECTORY)
 
 run_debug: build/$(PROGRAM)
 	./build/$(PROGRAM) -d $(TESTE_FILE)
 	cp $(OUTPUT_TESTE_FILE) $(BVM_DIRECTORY)
 	cp $(OUTPUT_TESTE_FILE) $(DASS_DIRECTORY)
+	cp $(OUTPUT_TESTE_FILE) $(BDB_DIRECTORY)
 
 clean:
 	rm $(OBJS)
